@@ -28,8 +28,8 @@ namespace myriaworld{
         std::string m_name;
         int m_rank;
         cart3_point m_c3_location;   // 3d coordinate on unit sphere
-        polar2_point m_s2_location;  // coordinate on map
-        cart2_point m_c2_location;   // as read from shapefile
+        polar2_point m_s2_location;  // as read from shapefile
+        cart3_point m_mappos;   // as read from shapefile
     };
 
     struct country{
@@ -39,14 +39,14 @@ namespace myriaworld{
 
     struct triangle{
         cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
-        cart2_polygon m_c2_poly;   // coordinate on map
+        cart3_polygon m_mappos;   // coordinate on map
         polar2_polygon m_s2_poly;  // as read produced by sphere triangulation
     };
 
     struct country_bit{
         boost::shared_ptr<country> m_country;
         cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
-        cart2_polygon m_c2_poly;   // coordinate on map
+        cart3_polygon m_mappos;   // coordinate on map
         polar2_polygon m_s2_poly;  // as read from shapefile
         country_bit(){}
         country_bit(const polar2_polygon& sp):m_s2_poly(sp){}
@@ -85,6 +85,7 @@ namespace myriaworld{
     struct vertex_fracfilled_t { typedef boost::vertex_property_tag kind; };
     struct country_bits_t      { typedef boost::vertex_property_tag kind; };
     struct cities_t            { typedef boost::vertex_property_tag kind; };
+    struct parent_t            { typedef boost::vertex_property_tag kind; };
     struct n_shared_vert_t     { typedef boost::edge_property_tag kind;   };
     struct shared_edge_t       { typedef boost::edge_property_tag kind;   };
 
@@ -96,7 +97,8 @@ namespace myriaworld{
             boost::property<vertex_area_t, double,
             boost::property<vertex_fracfilled_t, double,
             boost::property<country_bits_t, country_bit_vec,
-            boost::property<cities_t, city_vec> > > > >
+            boost::property<parent_t, size_t,
+            boost::property<cities_t, city_vec> > > > > >
                 TriangleVertexProperty;
 
     typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS,

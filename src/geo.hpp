@@ -38,7 +38,6 @@ namespace myriaworld { namespace geo {
             const cart3_polygon& t1);
 
     cart3_point  rotate_around_axis(
-            const cart3_polygon& base, 
             const cart3_polygon& dst, 
             unsigned int a0, unsigned int a1,
             unsigned int pt_idx,
