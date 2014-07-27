@@ -12,11 +12,15 @@ geo.o: geo.cpp geo.hpp myriaworld.h.gch
 	$(CXX) $(CXXFLAGS) -c geo.cpp -o $@
 
 SPHEmesh.o: SPHEmesh.cpp SPHEmesh.hpp myriaworld.h.gch
-	$(CXX) $(CXXFLAGS) -c geo.cpp -o $@
+	$(CXX) $(CXXFLAGS) -c SPHEmesh.cpp -o $@
 
 read_shapefile_data.o: read_shapefile_data.cpp myriaworld.h.gch
-	$(CXX) $(CXXFLAGS) -c geo.cpp -o $@
+	$(CXX) $(CXXFLAGS) -c read_shapefile_data.cpp -o $@
+
+country2tria.o: country2tria.cpp myriaworld.h.gch
+	$(CXX) $(CXXFLAGS) -c country2tria.cpp -o $@
 
 clean:
+	rm -f *.o
 	rm -f myriaworld.h.gch
 	rm -f myriaworld.hpp.gch

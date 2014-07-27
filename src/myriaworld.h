@@ -48,6 +48,8 @@ namespace myriaworld{
         cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
         cart2_polygon m_c2_poly;   // coordinate on map
         polar2_polygon m_s2_poly;  // as read from shapefile
+        country_bit(){}
+        country_bit(const polar2_polygon& sp):m_s2_poly(sp){}
     };
 
     struct shared_edge_property{

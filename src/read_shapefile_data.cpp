@@ -68,7 +68,7 @@ std::vector<country> read_countries(const std::string& filename){
         return countries;
 }
 
-std::vector<polar2_polygon> read_triangle_grid(const std::string& filename, int recdepth){
+std::vector<polar2_polygon> read_triangle_grid(const std::string& filename){
     BOOST_LOG_TRIVIAL(info) << "Reading triangles from `"<<filename<<"'...";
     std::vector<polar2_polygon>  trias;
     std::ifstream ifs(filename.c_str());
@@ -149,8 +149,8 @@ get_triangle_graph(int maxlevel){
 
     triangle_graph tg(triangles.size());
 
-    boost::property_map<triangle_graph, vertex_index_t>::type index_map 
-        = get(vertex_index, tg);
+    //boost::property_map<triangle_graph, vertex_index_t>::type index_map 
+        //= get(vertex_index, tg);
 
     boost::property_map<triangle_graph, vertex_pos_t>::type pos_map 
         = get(vertex_pos_t(), tg);
@@ -174,8 +174,9 @@ get_triangle_graph(int maxlevel){
 
         rtree.query(bgi::nearest(ca, 1), std::back_inserter(res));
         if(res.size() == 0 || geo::haversine_distance(vertices[res[0].get<1>()], a) > 0.001){
+            unsigned int idx = vertices.size();
             vertices.push_back(a);
-            rtree.insert({ca, vertices.size()-1, tria});
+            rtree.insert({ca, idx, tria});
         }else{
             // we found another use of this vertex.
             int other = res.front().get<2>();
@@ -192,8 +193,9 @@ get_triangle_graph(int maxlevel){
         res.clear();
         rtree.query(bgi::nearest(cb, 1), std::back_inserter(res));
         if(res.size() == 0 || geo::haversine_distance(vertices[res[0].get<1>()], b) > 0.001){
+            unsigned int idx = vertices.size();
             vertices.push_back(b);
-            rtree.insert({cb, vertices.size()-1, tria});
+            rtree.insert({cb, idx, tria});
         }else{
             // we found another use of this vertex.
             int other = res.front().get<2>();
@@ -210,6 +212,10 @@ get_triangle_graph(int maxlevel){
 
     unsigned int tria_idx = 0;
     for(const auto& c : triangles){
+        pos_map[tria_idx].m_s2_poly.outer().push_back(c.outer()[0]);
+        pos_map[tria_idx].m_s2_poly.outer().push_back(c.outer()[1]);
+        pos_map[tria_idx].m_s2_poly.outer().push_back(c.outer()[2]);
+
         assert(c.outer().size() == 3);
         add_edge_checked(tria_idx, c.outer()[0], c.outer()[1]);
         add_edge_checked(tria_idx, c.outer()[1], c.outer()[2]);
@@ -227,4 +233,90 @@ get_triangle_graph(int maxlevel){
         assert(false);
     }
     return tg;
+}
+
+void determine_edge_weights(myriaworld::triangle_graph& g){
+    using namespace myriaworld;
+    namespace bg = boost::geometry;
+    using boost::vertex_index_t;
+    using boost::vertex_index;
+    using boost::edge_weight_t;
+    using boost::edge_weight;
+    using boost::property_map;
+    using boost::vertices;
+    using boost::edges;
+
+
+    property_map<triangle_graph, vertex_index_t>::type vertex_index_map = get(vertex_index, g);
+    property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+    property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
+    property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
+    property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
+    property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
+
+    {   // determine areas
+        auto vs = vertices(g);
+        for(auto vit = vs.first; vit!=vs.second; vit++){
+            auto p = pos_map[*vit].m_s2_poly;
+            bg::correct(p);
+            area_map[*vit] = bg::area(p);
+
+            double sum = 0.0;
+            for(const auto& p_ : bits_map[*vit]){
+                auto p = p_.m_s2_poly;
+                bg::correct(p);
+                sum += bg::area(p);
+            }
+            sum /= area_map[*vit];
+            frac_filled[*vit] = std::max(0.0, std::min(1.0, sum));
+        }
+    }
+
+    {
+        // 2. smooth triangle filled-counters
+        auto vs = vertices(g);
+        for(unsigned int iter=0; iter<50; iter++){
+            std::vector<double> frac_filled2(boost::num_vertices(g));
+            for(auto vit = vs.first; vit!=vs.second; vit++){
+                auto es          = boost::out_edges(*vit, g);
+                double sum       = 0.0;
+                double weightsum = 0.0;
+                for(auto eit = es.first; eit != es.second; eit++){
+                    const auto sourcev = source(*eit, g);
+                    const auto targetv = target(*eit, g);
+                    sum += 
+                        frac_filled[sourcev] * area_map[sourcev] +
+                        frac_filled[targetv] * area_map[targetv];
+                    weightsum += 
+                        area_map[sourcev] +
+                        area_map[targetv];
+                }
+                frac_filled2[std::distance(vs.first, vit)] =
+                    sum / weightsum;
+            }
+            for(unsigned int i=0; i < boost::num_vertices(g); i++)
+                frac_filled[i] = frac_filled2[i];
+        }
+    }
+
+    {
+        // 3. set the edge weights.
+        auto es = edges(g);
+        for(auto eit = es.first; eit != es.second; eit++){
+            const auto sourcev = source(*eit, g);
+            const auto targetv = target(*eit, g);
+            double sum = 
+                frac_filled[vertex_index_map[sourcev]] * area_map[sourcev] +
+                frac_filled[vertex_index_map[targetv]] * area_map[targetv];
+            double weightsum = 
+                area_map[sourcev] +
+                area_map[targetv];
+
+            sum /= weightsum; 
+            sum = exp(-sum);
+            //sum = 1. - (sum-0.1)*(sum-0.1);
+            weightmap[*eit] = sum;
+        }
+    }
+
 }
