@@ -37,6 +37,12 @@ namespace myriaworld{
         polar2_multipolygon m_s2_polys;  // all polygons which constitute the country
     };
 
+    struct triangle{
+        cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
+        cart2_polygon m_c2_poly;   // coordinate on map
+        polar2_polygon m_s2_poly;  // as read produced by sphere triangulation
+    };
+
     struct country_bit{
         boost::shared_ptr<country> m_country;
         cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
@@ -49,11 +55,22 @@ namespace myriaworld{
         
         // the "shared" vars are indices referring to the ones which are in
         // source and target vertex (=triangle)
-        char shared_l0, shared_l1, shared_h0, shared_h1;
+        unsigned char shared_l0, shared_l1, shared_h0, shared_h1;
 
         // the vertex which is not present in both triangles
         // (index in triangle-polygon)
-        char single_l, single_u;
+        unsigned char single_l, single_h;
+
+        template<class T>
+        inline shared_edge_property flipped_if_needed(const T& a, const T& b){
+            if(&a < &b)
+                return *this;
+            shared_edge_property ret(*this);
+            std::swap(ret.shared_l0, ret.shared_h0);
+            std::swap(ret.shared_l1, ret.shared_h1);
+            std::swap(ret.single_l, ret.single_h);
+            return ret;
+        }
 
         bool is_cut;
     };
@@ -61,25 +78,29 @@ namespace myriaworld{
     typedef std::vector<country_bit> country_bit_vec;
     typedef std::vector<city> city_vec;
 
+    struct vertex_pos_t        { typedef boost::vertex_property_tag kind; };
     struct vertex_area_t       { typedef boost::vertex_property_tag kind; };
     struct vertex_fracfilled_t { typedef boost::vertex_property_tag kind; };
     struct country_bits_t      { typedef boost::vertex_property_tag kind; };
     struct cities_t            { typedef boost::vertex_property_tag kind; };
+    struct n_shared_vert_t     { typedef boost::edge_property_tag kind;   };
     struct shared_edge_t       { typedef boost::edge_property_tag kind;   };
 
     typedef boost::property<boost::edge_weight_t, double,
-            boost::property<shared_edge_t, shared_edge_property > >
+            boost::property<n_shared_vert_t, int,
+            boost::property<shared_edge_t, shared_edge_property > > >
         TriangleEdgeProperty;
-    typedef boost::property<vertex_area_t, double,
+    typedef boost::property<vertex_pos_t, triangle,
+            boost::property<vertex_area_t, double,
             boost::property<vertex_fracfilled_t, double,
             boost::property<country_bits_t, country_bit_vec,
-            boost::property<cities_t, city_vec> > > >
+            boost::property<cities_t, city_vec> > > > >
                 TriangleVertexProperty;
 
     typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS,
             TriangleVertexProperty, TriangleEdgeProperty> triangle_graph;
 
-    typedef boost::graph_traits<graph_t>::vertex_descriptor triavertex_descriptor;
-    typedef boost::graph_traits<graph_t>::edge_descriptor triaedge_descriptor;
+    typedef boost::graph_traits<triangle_graph>::vertex_descriptor triavertex_descriptor;
+    typedef boost::graph_traits<triangle_graph>::edge_descriptor triaedge_descriptor;
 }
 #endif /* __MYRIAWORLD_HPP__ */
