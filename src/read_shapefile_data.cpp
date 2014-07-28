@@ -40,11 +40,11 @@ namespace myriaworld
                 }
                 //BOOST_LOG_TRIVIAL(debug) << " - poly...";
                 boost::geometry::correct(poly);
-                //spherical_polygon poly2;
+                //polar2_polygon poly2;
                 //boost::geometry::simplify(poly, poly2, 0.001);
                 //boost::geometry::correct(poly2);
                 //if(poly2.outer().size() > 4)
-                //c.push_back(poly2);
+                //c.m_s2_polys.push_back(poly2);
                 c.m_s2_polys.push_back(poly);
             }
             //assert(c.size() == n_poly);
@@ -135,6 +135,7 @@ namespace myriaworld
             {
                 boost::geometry::strategy::transform::from_cartesian_3_to_spherical_equatorial_2<cart3_point, polar2_point> strategy;
                 boost::geometry::transform(ctriangles[i], triangles[i], strategy);
+                triangles[i] = geo::rotated(triangles[i], 2.1828, 2.1725);
             }
 
             triangle_graph tg(triangles.size());
@@ -152,52 +153,38 @@ namespace myriaworld
             typedef boost::tuple<cart2_point, unsigned, unsigned> value;
             bgi::rtree <value, bgi::quadratic<16> > rtree;
             std::vector<polar2_point> vertices;
+            std::vector<std::vector<unsigned int> > 
+                vertex_to_tria(boost::num_vertices(tg));
 
-            // add an edge between a and b if it is not yet in the set of edges
-            auto add_edge_checked = [&](unsigned int tria, const polar2_point& a, const polar2_point& b){
+            auto add_node_checked = [&](unsigned int tria, const polar2_point& a){
                 std::vector<value> res;
                 using namespace myriaworld;
 
-                cart2_point ca, cb;
+                cart2_point ca;
                 geo::cast_polar2_equatorial_2_cart_2(ca, a, 0.);
-                geo::cast_polar2_equatorial_2_cart_2(cb, b, 0.);
 
                 rtree.query(bgi::nearest(ca, 1), std::back_inserter(res));
                 if(res.size() == 0 || geo::haversine_distance(vertices[res[0].get<1>()], a) > 0.001){
                     unsigned int idx = vertices.size();
                     vertices.push_back(a);
                     rtree.insert({ca, idx, tria});
+                    vertex_to_tria[idx] = {tria};
                 }else{
                     // we found another use of this vertex.
-                    int other = res.front().get<2>();
-                    auto e = boost::edge(other, tria, tg);
-                    if(!e.second){
-                        boost::add_edge(other, tria, tg);
-                        n_shared_vert_map[boost::edge(other, tria, tg).first]
-                            = 1;
-                    }else{
-                        n_shared_vert_map[e.first]++;
+                    unsigned int other = res.front().get<1>();
+                    for(auto tria2 : vertex_to_tria[other]){
+                        auto e = boost::edge(tria2, tria, tg);
+                        if(!e.second){
+                            boost::add_edge(tria2, tria, tg);
+                            n_shared_vert_map[boost::edge(tria2, tria, tg).first] = 1;
+                        }else{
+                            n_shared_vert_map[e.first]++;
+                            assert( n_shared_vert_map[e.first] <= 2);
+                        }
                     }
+                    vertex_to_tria[other].push_back(tria);
                 }
 
-                res.clear();
-                rtree.query(bgi::nearest(cb, 1), std::back_inserter(res));
-                if(res.size() == 0 || geo::haversine_distance(vertices[res[0].get<1>()], b) > 0.001){
-                    unsigned int idx = vertices.size();
-                    vertices.push_back(b);
-                    rtree.insert({cb, idx, tria});
-                }else{
-                    // we found another use of this vertex.
-                    int other = res.front().get<2>();
-                    auto e = boost::edge(other, tria, tg);
-                    if(!e.second){
-                        boost::add_edge(other, tria, tg);
-                        n_shared_vert_map[boost::edge(other, tria, tg).first]
-                            = 1;
-                    }else{
-                        n_shared_vert_map[e.first]++;
-                    }
-                }
             };
 
             unsigned int tria_idx = 0;
@@ -207,21 +194,17 @@ namespace myriaworld
                 pos_map[tria_idx].m_s2_poly.outer().push_back(c.outer()[2]);
 
                 assert(c.outer().size() == 3);
-                add_edge_checked(tria_idx, c.outer()[0], c.outer()[1]);
-                add_edge_checked(tria_idx, c.outer()[1], c.outer()[2]);
-                add_edge_checked(tria_idx, c.outer()[2], c.outer()[0]);
+                add_node_checked(tria_idx, c.outer()[0]);
+                add_node_checked(tria_idx, c.outer()[1]);
+                add_node_checked(tria_idx, c.outer()[2]);
                 ++tria_idx;
             }
 
             // remove all edges which have n_shared_vert != 2
-            auto es = edges(tg);
-            for(auto eit = es.first; eit!= es.second; eit++){
-                if(n_shared_vert_map[*eit] < 2){
-                    boost::remove_edge(*eit, tg);
-                    continue;
-                }
-                assert(false);
-            }
+            boost::remove_edge_if(
+                    [&](const triaedge_descriptor& e){
+                        return n_shared_vert_map[e] < 2;
+                    }, tg);
             return tg;
         }
 

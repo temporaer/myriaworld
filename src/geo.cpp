@@ -11,6 +11,16 @@ namespace myriaworld
 {
     namespace geo
     {
+        bool crosses_dateline(const polar2_point& a, const polar2_point& b){
+            bool crosses = false;
+            double lat0 = a.get<0>();
+            double lat1 = b.get<0>();
+            if(lat0 * lat1 < 0
+                    && fabs(lat0) > 170 && fabs(lat1) > 170){
+                crosses = true;
+            }
+            return crosses;
+        }
         bool crosses_dateline(const polar2_polygon& poly){
             bool crosses = false;
             for(unsigned int i=0; i < poly.outer().size()-1; ++i){
@@ -276,11 +286,10 @@ namespace myriaworld
 
         cart3_polygon flatten(const cart3_polygon& t0c, const cart3_polygon& t1c,
                 const cart3_polygon& base, const shared_edge_property& sep, double fact){
-            cart3_polygon dst;
             using namespace boost::geometry::strategy::transform;
 
             // TODO: make sure t0c has lower index than t1c?
-            construct_triangle_pair(t0c, t1c, base, sep);
+            cart3_polygon dst = construct_triangle_pair(t0c, t1c, base, sep);
 
             unsigned char a10 = sep.shared_h0,
                           a11 = sep.shared_h1,
@@ -357,6 +366,12 @@ namespace myriaworld
 
             int res0 = atlas::getrf(A, ipiv);
             int res1 = atlas::getrs(A, ipiv, rhs);
+            if(res0 != 0){
+                std::cout << "res0 != 0, A: " << A << std::endl;
+            }
+            if(res1 != 0){
+                std::cout << "res1 != 0, A: " << A << std::endl;
+            }
             assert(res0 == 0);
             assert(res1 == 0);
 

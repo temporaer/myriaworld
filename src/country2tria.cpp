@@ -1,5 +1,6 @@
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/progress.hpp>
 #include "myriaworld.h"
 #include "country2tria.hpp"
 #include "geo.hpp"
@@ -7,6 +8,7 @@
 namespace myriaworld
 {
     void country2tria(triangle_graph& g, const std::vector<country>& countries){
+        BOOST_LOG_TRIVIAL(info) << "Determining overlap btw triangles, countries";
         namespace bgi = boost::geometry::index;
 
         std::vector<polar2_polygon> flat_countries;
@@ -22,8 +24,9 @@ namespace myriaworld
 
         unsigned int n_intersection_checks = 0;
         unsigned int box_lat = 145, box_lng = 70;
-        for(int lat_off = -40; lat_off <= 40; lat_off += 20){
-            for(int lng_off = -40; lng_off <= 40; lng_off += 20){
+        boost::progress_display show_progress(3 * 3);
+        for(int lat_off = -45; lat_off <= 45; lat_off += 30){
+            for(int lng_off = -45; lng_off <= 45; lng_off += 30){
                 bgi::rtree <value, bgi::quadratic<16> > country_idx;
                 {   unsigned idx=0;
                     box b;
@@ -92,6 +95,7 @@ namespace myriaworld
                     }
                     ++tria_id;
                 }
+                ++show_progress;
             }
         }
     }

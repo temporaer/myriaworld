@@ -11,6 +11,7 @@ namespace myriaworld { namespace geo {
 
     /// check whether the triangle crosses the -180/180 lat line
     bool crosses_dateline(const polar2_polygon& poly);
+    bool crosses_dateline(const polar2_point& a, const polar2_point& b);
 
     //////////////////////////////////////////////////////////
     //   Casting polar to cart2d and vice versa
