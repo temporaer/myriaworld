@@ -64,10 +64,11 @@ def plot_polys_2d(fn):
     #    [x[0] for x in fe.centroids],
     #    [x[1] for x in fe.centroids])
 
-    ax.set_xlim(-180, 180)
-    ax.set_ylim(-90, 90)
-    #ax.set_xlim(-1.5, 1.5)
-    #ax.set_ylim(-1.5, 1.5)
+    #ax.set_xlim(-180, 180)
+    #ax.set_ylim(-90, 90)
+    lines = lines.reshape(-1, 4)
+    ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
+    ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
     #plt.savefig("~/Dropbox/Public/map2.png")
     plt.show()
 
