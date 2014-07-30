@@ -99,9 +99,9 @@ int main(){
     auto countries = read_countries("../../myriaworld/easy.txt");
     auto g = get_triangle_graph(5);
     fscache::function_cache c;
-    c("country2tria", 0, side_effect_wrap, country2tria, g, countries);
+    g = c("country2tria", 0, side_effect_wrap, country2tria, g, countries);
     determine_edge_weights(g);
     determine_cuttings(g);
+    flatten(g, 1.);
     write_s2centroids("triagrid.txt", g);
-    flatten(g, 0.);
 }
