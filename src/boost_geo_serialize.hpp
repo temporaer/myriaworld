@@ -24,19 +24,19 @@ namespace boost
             void save(Archive &ar, const myriaworld::polar2_point &pos, const
                     unsigned int )
             {
-                double lat(pos.get<0>()), lon(pos.get<1>());
-                ar & BOOST_SERIALIZATION_NVP(lon);
-                ar & BOOST_SERIALIZATION_NVP(lat);
+                double p0(pos.get<0>()), p1(pos.get<1>());
+                ar & BOOST_SERIALIZATION_NVP(p0);
+                ar & BOOST_SERIALIZATION_NVP(p1);
             }
 
         template <class Archive>
             void load(Archive &ar, myriaworld::polar2_point &pos, const unsigned
                     int )
             {
-                double lat, lon;
-                ar & BOOST_SERIALIZATION_NVP(lon);
-                ar & BOOST_SERIALIZATION_NVP(lat);
-                pos = myriaworld::polar2_point(lon, lat);
+                double p0, p1;
+                ar & BOOST_SERIALIZATION_NVP(p0);
+                ar & BOOST_SERIALIZATION_NVP(p1);
+                pos = myriaworld::polar2_point(p0, p1);
             }
 
 
