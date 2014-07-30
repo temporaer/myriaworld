@@ -326,7 +326,7 @@ namespace myriaworld
                     dst.outer()[pt1] = rotate_around_axis(dst, a10, a11, pt1, -fact * ang);
                 }
                 double ang3 = angle_between(base, dst);
-                std::cout << "New angle betwen base and dst: " << ang3 << std::endl;
+                //std::cout << "New angle betwen base and dst: " << ang3 << std::endl;
             }
             return dst;
         }
@@ -407,8 +407,8 @@ namespace myriaworld
             A(2, 2) = n0b.get<2>();
 
             rhs = ublas::prod(A, rhs);
-            std::cout << "A1: " << A << std::endl;
-            std::cout << "rhs: "<<rhs(0,0) <<" " << rhs(1,0) << " " << rhs(2,0)<<std::endl;
+            //std::cout << "A1: " << A << std::endl;
+            //std::cout << "rhs: "<<rhs(0,0) <<" " << rhs(1,0) << " " << rhs(2,0)<<std::endl;
 
             // determine pt1 using the same linear combination
             dst.outer()[pt1].set<0>(rhs(0,0));
