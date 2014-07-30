@@ -52,6 +52,15 @@ namespace myriaworld { namespace geo {
         flatten(const cart3_polygon& t0, const cart3_polygon& t1,
                 const cart3_polygon& base, const shared_edge_property& sep, double fact);
 
+    /// move a point in t0 to the same position in t1.
+    cart3_point 
+        tria2tria(const cart3_polygon& t0, const cart3_polygon& t1,
+                const cart3_point& src);
+    /// move a polygon in t0 to the same position in t1.
+    cart3_polygon 
+        tria2tria(const cart3_polygon& t0, const cart3_polygon& t1,
+                const cart3_polygon& src);
+
     /// given two triangles t0 and t1 which share a common edge described in sep,
     /// and a triangle base representing t0 in another position, construct a
     /// new triangle dst such that the angles and the relative distances are

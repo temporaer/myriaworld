@@ -325,10 +325,82 @@ namespace myriaworld
                     dst.outer()[pt1] = pt1_orig;
                     dst.outer()[pt1] = rotate_around_axis(dst, a10, a11, pt1, -fact * ang);
                 }
-                double ang3 = angle_between(base, dst);
+                //double ang3 = angle_between(base, dst);
                 //std::cout << "New angle betwen base and dst: " << ang3 << std::endl;
             }
             return dst;
+        }
+        cart3_point relative_tria_pos(const cart3_point& d0, const cart3_point& d1, const cart3_point& n0, const cart3_point p){
+            namespace ublas = boost::numeric::ublas;
+            namespace atlas = boost::numeric::bindings::atlas;
+            typedef ublas::matrix<double, ublas::column_major> matrix;
+            std::vector<int> ipiv(3);
+
+            // A x = b,   rhs is b [input] and x [output]
+            matrix A(3,3);
+            matrix rhs(3, 1);
+
+            rhs(0,0) = p.get<0>();
+            rhs(1,0) = p.get<1>();
+            rhs(2,0) = p.get<2>();
+
+            A(0, 0) = d0.get<0>();
+            A(1, 0) = d0.get<1>();
+            A(2, 0) = d0.get<2>();
+            A(0, 1) = d1.get<0>();
+            A(1, 1) = d1.get<1>();
+            A(2, 1) = d1.get<2>();
+            A(0, 2) = n0.get<0>();
+            A(1, 2) = n0.get<1>();
+            A(2, 2) = n0.get<2>();
+
+            int res0 = atlas::getrf(A, ipiv);
+            int res1 = atlas::getrs(A, ipiv, rhs);
+            if(res0 != 0){
+                std::cout << "res0 != 0, A: " << A << std::endl;
+            }
+            if(res1 != 0){
+                std::cout << "res1 != 0, A: " << A << std::endl;
+            }
+            assert(res0 == 0);
+            assert(res1 == 0);
+            return cart3_point(rhs(0, 0), rhs(1,0), rhs(2,0));
+        }
+        cart3_point relative_tria_pos(const cart3_polygon& t, const cart3_point& p){
+            cart3_point d0 = difference(t.outer()[1], t.outer()[0]);
+            cart3_point d1 = difference(t.outer()[2], t.outer()[0]);
+            cart3_point n0 = cross(d0, d1);
+            return relative_tria_pos(d0, d1, n0, difference(p, t.outer()[0]));
+        }
+        cart3_point reltriapos_to_abs(const cart3_point& d0, const cart3_point& d1, const cart3_point& n0, const cart3_point p){
+            namespace ublas = boost::numeric::ublas;
+            namespace atlas = boost::numeric::bindings::atlas;
+            typedef ublas::matrix<double, ublas::column_major> matrix;
+            matrix rhs(3, 1);
+            matrix A(3, 3);
+
+            rhs(0,0) = p.get<0>();
+            rhs(1,0) = p.get<1>();
+            rhs(2,0) = p.get<2>();
+
+            A(0, 0) = d0.get<0>();
+            A(1, 0) = d0.get<1>();
+            A(2, 0) = d0.get<2>();
+            A(0, 1) = d1.get<0>();
+            A(1, 1) = d1.get<1>();
+            A(2, 1) = d1.get<2>();
+            A(0, 2) = n0.get<0>();
+            A(1, 2) = n0.get<1>();
+            A(2, 2) = n0.get<2>();
+
+            rhs = ublas::prod(A, rhs);
+            return cart3_point(rhs(0,0), rhs(1,0), rhs(2,0));
+        }
+        cart3_point reltriapos_to_abs(const cart3_polygon& t, const cart3_point& p){
+            cart3_point d0 = difference(t.outer()[1], t.outer()[0]);
+            cart3_point d1 = difference(t.outer()[2], t.outer()[0]);
+            cart3_point n0 = cross(d0, d1);
+            return sum(t.outer()[0], reltriapos_to_abs(d0, d1, n0, difference(p, t.outer()[0])));
         }
         cart3_polygon construct_triangle_pair(
                 const cart3_polygon& t0, const cart3_polygon& t1,
@@ -447,6 +519,19 @@ namespace myriaworld
             c2pt.set<2>( c2pt.get<2>() / 3. );
             bg::transform(c2pt, res, cart3sph2);
             return res;
+        }
+    cart3_point 
+        tria2tria(const cart3_polygon& t0, const cart3_polygon& t1,
+                const cart3_point& src){
+            return reltriapos_to_abs(t1, relative_tria_pos(t0, src));
+        }
+    cart3_polygon
+        tria2tria(const cart3_polygon& t0, const cart3_polygon& t1,
+                const cart3_polygon& src){
+            cart3_polygon ret;
+            for(auto p : src.outer())
+                ret.outer().push_back(reltriapos_to_abs(t1, relative_tria_pos(t0, p)));
+            return ret;
         }
 
     }

@@ -53,6 +53,8 @@ namespace myriaworld
             = get(vertex_pos_t(), g);
         boost::property_map<triangle_graph, shared_edge_t>::type se_map 
             = get(shared_edge_t(), g);
+        boost::property_map<triangle_graph, country_bits_t>::type cb_map 
+            = get(country_bits_t(), g);
 
 
         {
@@ -78,7 +80,6 @@ namespace myriaworld
                 // current triangle in globe coordinates
                 int cur_tria = open_list.back();
                 open_list.pop_back();
-                printf("flattening triangle %d\n", cur_tria);
 
                 closed_list.push_back(cur_tria);
                 //if(closed_list.size() > 10)
@@ -102,6 +103,15 @@ namespace myriaworld
                     pos_map[targetv].m_mappos 
                         = geo::flatten(pos_map[sourcev].m_c3_poly, pos_map[targetv].m_c3_poly, 
                             pos_map[sourcev].m_mappos, se_map[*eit].flipped_if_needed(sourcev, targetv), fact);
+                    
+                    for(auto& b : cb_map[targetv]){
+                        bg::strategy::transform::from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> strategy;
+                        boost::geometry::transform(b.m_s2_poly, b.m_c3_poly, strategy);
+                        b.m_mappos = geo::tria2tria(
+                                pos_map[targetv].m_c3_poly,
+                                pos_map[targetv].m_mappos,
+                                b.m_c3_poly);
+                    }
 
                     open_list.push_back(targetv);
                 }

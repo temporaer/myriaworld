@@ -17,12 +17,14 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
     using myriaworld::triangle_graph;
     using myriaworld::vertex_pos_t;
     using myriaworld::shared_edge_t;
+    using myriaworld::country_bits_t;
     using boost::edge_weight_t;
     using boost::edge_weight;
     std::vector<polar2_point> centroids(boost::num_vertices(g));
     boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
     boost::property_map<triangle_graph, edge_weight_t>::type weight_map = get(edge_weight, g);
     boost::property_map<triangle_graph, shared_edge_t>::type se_map = get(shared_edge_t(), g);
+    boost::property_map<triangle_graph, country_bits_t>::type bs_map = get(country_bits_t(), g);
     auto vs = boost::vertices(g);
     for(auto vit = vs.first; vit != vs.second; vit++){
         centroids[*vit] = myriaworld::geo::spherical_centroid(pos_map[*vit].m_s2_poly);
@@ -52,9 +54,17 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
     //    optional_print_s2(1, t.outer()[0], t.outer()[2]);
     //    optional_print_s2(1, t.outer()[1], t.outer()[2]);
     //}
+    for(auto vit = vs.first; vit != vs.second; vit++){
+        for(const auto& bit : bs_map[*vit]){
+            auto b = bit.m_mappos.outer();
+            for (unsigned int i = 0; i < b.size(); ++i)
+            {
+                optional_print_c2(1, b[i], b[(i + 1)%b.size()]);
+            }
+        }
+    }
     auto es = boost::edges(g);
-    std::cout << "n edges: " << boost::num_edges(g) << std::endl;
-    std::cout << "n vert: " << boost::num_vertices(g) << std::endl;
+    if(0)
     for(auto eit = es.first; eit != es.second; eit++){
         auto sourcev = boost::source(*eit, g);
         auto targetv = boost::target(*eit, g);
