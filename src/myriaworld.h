@@ -13,9 +13,9 @@ namespace myriaworld{
     typedef bg::model::point<double, 2, bg::cs::cartesian> cart2_point;
     typedef bg::model::point<double, 3, bg::cs::cartesian> cart3_point;
 
-    typedef bg::model::polygon<cart2_point, true, false> cart2_polygon;
-    typedef bg::model::polygon<cart3_point, true, false> cart3_polygon;
-    typedef bg::model::polygon<polar2_point, true, false> polar2_polygon;
+    typedef bg::model::polygon<cart2_point  /*, true, false*/> cart2_polygon;
+    typedef bg::model::polygon<cart3_point  /*, true, false*/> cart3_polygon;
+    typedef bg::model::polygon<polar2_point /*, true, false*/> polar2_polygon;
 
     typedef bg::model::multi_polygon<polar2_polygon> polar2_multipolygon;
     typedef bg::model::multi_polygon<cart3_polygon> cart3_multipolygon;
@@ -30,17 +30,29 @@ namespace myriaworld{
         cart3_point m_c3_location;   // 3d coordinate on unit sphere
         polar2_point m_s2_location;  // as read from shapefile
         cart3_point m_mappos;   // as read from shapefile
+        template<class Archive>
+        void serialize(Archive& ar, const unsigned long ){
+            ar & m_name & m_rank & m_c3_location & m_s2_location & m_mappos;
+        }
     };
 
     struct country{
         std::string m_name;          // the name of this country
         polar2_multipolygon m_s2_polys;  // all polygons which constitute the country
+        template<class Archive>
+        void serialize(Archive& ar, const unsigned long ){
+            ar & m_name & m_s2_polys;
+        }
     };
 
     struct triangle{
         cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
         cart3_polygon m_mappos;   // coordinate on map
         polar2_polygon m_s2_poly;  // as read produced by sphere triangulation
+        template<class Archive>
+        void serialize(Archive& ar, const unsigned long ){
+            ar & m_c3_poly & m_mappos & m_s2_poly;
+        }
     };
 
     struct country_bit{
@@ -50,6 +62,10 @@ namespace myriaworld{
         polar2_polygon m_s2_poly;  // as read from shapefile
         country_bit(){}
         country_bit(const polar2_polygon& sp):m_s2_poly(sp){}
+        template<class Archive>
+        void serialize(Archive& ar, const unsigned long ){
+            ar & m_c3_poly & m_mappos & m_s2_poly;
+        }
     };
 
     struct shared_edge_property{
@@ -65,7 +81,7 @@ namespace myriaworld{
 
         template<class T>
         inline shared_edge_property flipped_if_needed(const T& a, const T& b){
-            if(&a < &b)
+            if(a < b)
                 return *this;
             shared_edge_property ret(*this);
             std::swap(ret.shared_l0, ret.shared_h0);
@@ -75,6 +91,12 @@ namespace myriaworld{
         }
 
         bool is_cut;
+        template<class Archive>
+        void serialize(Archive& ar, const unsigned long ){
+            ar & shared_l0 & shared_l1 & shared_h0 & shared_h1;
+            ar & single_l & single_h;
+            ar & is_cut;
+        }
     };
 
     typedef std::vector<country_bit> country_bit_vec;

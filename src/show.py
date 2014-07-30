@@ -49,7 +49,7 @@ def plot_polys_2d(fn):
     lines = lines[:, 1:].reshape(-1, 2, 2)
     linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
     linecol.set_array(line_colors)
-    trace()
+    #trace()
     ax.add_collection(linecol)
 
     ##fe = FinElem("src/tbits.txt", latlng=True)

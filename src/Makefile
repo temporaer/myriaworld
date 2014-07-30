@@ -2,11 +2,14 @@ CXXINCLUDE=-I ../boost-numeric-bindings -I/usr/include/atlas
 CXXOPT=-O3 -g3
 CXXFLAGS=-std=c++1y -DBOOST_LOG_DYN_LINK -pthread -Wall -Wextra -Wl,--no-as-needed -pedantic $(CXXINCLUDE) $(CXXOPT)
 CXX=g++-4.8
-LDFLAGS=-pthread -Wl,--no-as-needed -lboost_log -lboost_system -lboost_thread -llapack -llapack_atlas
+LDFLAGS=-pthread -Wl,--no-as-needed -lboost_log -lboost_system -lboost_thread -llapack -llapack_atlas -lboost_filesystem -lboost_serialization
 
-all: myriaworld
+all: myriaworld test_cached_function
 pch: myriaworld.h.gch
 objs: myriaworld.o geo.o read_shapefile_data.o SPHEmesh.o country2tria.o cutting.o
+
+test_cached_function: cached_function.hpp cached_function.cpp
+	g++  -DBOOST_LOG_DYN_LINK -pthread -std=c++11 cached_function.cpp -lboost_log -lboost_system -lboost_filesystem -lboost_serialization -o test_cached_function
 
 myriaworld: pch objs
 	g++ $(LDFLAGS) -o myriaworld geo.o read_shapefile_data.o SPHEmesh.o country2tria.o cutting.o myriaworld.o

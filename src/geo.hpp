@@ -62,6 +62,8 @@ namespace myriaworld { namespace geo {
 
     bool inside_box(const polar2_polygon& sp, double lat_off, double lng_off);
     polar2_point spherical_centroid(const polar2_polygon& poly);
+    shared_edge_property determine_shared_vertices(const polar2_polygon& a, const polar2_polygon& b);
+    shared_edge_property determine_shared_vertices(const cart3_polygon& a, const cart3_polygon& b);
 
     } }
 #endif /* __GEO_HPP__ */

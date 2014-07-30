@@ -154,6 +154,11 @@ namespace myriaworld
                     a.get<1>() * b.get<1>()+
                     a.get<2>() * b.get<2>());
         }
+        cart3_point difference(const polar2_point& a, const polar2_point& b){
+            return cart3_point(
+                    a.get<0>() - b.get<0>(),
+                    a.get<1>() - b.get<1>(), 0.);
+        }
         cart3_point difference(const cart3_point& a, const cart3_point& b){
             return cart3_point(
                     a.get<0>() - b.get<0>(),
@@ -243,52 +248,68 @@ namespace myriaworld
             
             return pt2;
         }
-        shared_edge_property determine_shared_vertices(cart3_polygon& a, cart3_polygon& b){
-            assert(a.outer().size() == 3);
-            assert(b.outer().size() == 3);
-            shared_edge_property sep;
+        namespace detail
+        {
+            template<class T>
+            shared_edge_property determine_shared_vertices(const T& a, const T& b){
+                assert(a.outer().size() == 3);
+                assert(b.outer().size() == 3);
+                shared_edge_property sep;
 
-            int a2b[3] = {0, 0, 0};
-            int n_found = 0;
-            for (int i = 0; i < 3; ++i)
-            {
-                bool found = false;
-                for (int j = 0; j < 3; ++j)
+                int a2b[3] = {0, 0, 0};
+                int n_found = 0;
+                for (int i = 0; i < 3; ++i)
                 {
-                    if(norm2(difference(a.outer()[i], b.outer()[j])) < 0.000001)
+                    bool found = false;
+                    for (int j = 0; j < 3; ++j)
                     {
-                        a2b[i] = j;
-                        found = true;
-                        n_found ++;
-                        break;
+                        if(norm2(difference(a.outer()[i], b.outer()[j])) < 0.000001)
+                        {
+                            a2b[i] = j;
+                            found = true;
+                            n_found ++;
+                            break;
+                        }
+                    }
+                    if(!found){
+                        sep.single_l = i;  // the point in b which is not in a
+                        sep.shared_l0 = (i + 1) % 3;  // another point.
+                        sep.shared_l1 = (i + 2) % 3;  // a0 and a1 are the rotation axis
                     }
                 }
-                if(!found){
-                    sep.single_l = i;  // the point in b which is not in a
-                    sep.shared_l0 = (i + 1) % 3;  // another point.
-                    sep.shared_l1 = (i + 2) % 3;  // a0 and a1 are the rotation axis
+                assert(n_found == 2);
+                sep.shared_h0 = a2b[sep.shared_l0];
+                sep.shared_h1 = a2b[sep.shared_l1];
+                if(sep.shared_h0 != 0 && sep.shared_h1 != 0)
+                    sep.single_h = 0;
+                else if(sep.shared_h0 != 1 && sep.shared_h1 != 1)
+                    sep.single_h = 1;
+                else if(sep.shared_h0 != 2 && sep.shared_h1 != 2)
+                    sep.single_h = 2;
+                else{
+                    assert(false);
                 }
+                assert(sep.shared_h0 != sep.shared_h1);
+                assert(sep.shared_l0 != sep.shared_l1);
+                assert(sep.single_h != sep.shared_h1);
+                assert(sep.single_l != sep.shared_l1);
+                assert(sep.single_h != sep.shared_h0);
+                assert(sep.single_l != sep.shared_l0);
+                return sep;
             }
-            assert(n_found == 2);
-            sep.shared_h0 = a2b[sep.shared_l0];
-            sep.shared_h1 = a2b[sep.shared_l1];
-            if(sep.shared_h0 != 0 && sep.shared_h1 != 0)
-                sep.single_h = 0;
-            else if(sep.shared_h0 != 1 && sep.shared_h1 != 1)
-                sep.single_h = 1;
-            else if(sep.shared_h0 != 2 && sep.shared_h1 != 2)
-                sep.single_h = 2;
-            else{
-                assert(false);
-            }
-            return sep;
+        }
+        shared_edge_property determine_shared_vertices(const cart3_polygon& a, const cart3_polygon& b){
+            return detail::determine_shared_vertices(a, b);
+        }
+        shared_edge_property determine_shared_vertices(const polar2_polygon& a, const polar2_polygon& b){
+            return detail::determine_shared_vertices(a, b);
         }
 
         cart3_polygon flatten(const cart3_polygon& t0c, const cart3_polygon& t1c,
-                const cart3_polygon& base, const shared_edge_property& sep, double fact){
+                const cart3_polygon& base, const shared_edge_property& , double fact){
             using namespace boost::geometry::strategy::transform;
 
-            // TODO: make sure t0c has lower index than t1c?
+            auto sep = determine_shared_vertices(t0c, t1c);
             cart3_polygon dst = construct_triangle_pair(t0c, t1c, base, sep);
 
             unsigned char a10 = sep.shared_h0,
