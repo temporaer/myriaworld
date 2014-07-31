@@ -40,7 +40,7 @@ class FinElem:
         self.polys = L
 
 def plot_polys_2d(fn):
-    fig = plt.figure(figsize=plt.figaspect(1),)
+    fig = plt.figure(figsize=(15, 15))
     ax = fig.add_subplot(111)
 
     #lines = np.loadtxt("src/dual_graph.txt").reshape(-1, 5)
@@ -50,15 +50,15 @@ def plot_polys_2d(fn):
     linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
     linecol.set_array(line_colors)
     #trace()
-    ax.add_collection(linecol)
+    #ax.add_collection(linecol)
 
     ##fe = FinElem("src/tbits.txt", latlng=True)
-    #fe = FinElem("src/flattened.txt", latlng=True)
-    #verts = fe.polys
-    #colors = fe.colors
-    ##colors = np.random.uniform(size=len(verts))
-    #ax.add_collection(matplotlib.collections.PolyCollection(verts,
-    #    array=colors, edgecolor="black", lw=1, alpha=.3, cmap="jet"))
+    fe = FinElem("flattened.txt", latlng=True)
+    verts = fe.polys
+    colors = fe.colors
+    #colors = np.random.uniform(size=len(verts))
+    ax.add_collection(matplotlib.collections.PolyCollection(verts,
+        array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
 
     #ax.scatter(
     #    [x[0] for x in fe.centroids],
@@ -69,7 +69,11 @@ def plot_polys_2d(fn):
     lines = lines.reshape(-1, 4)
     ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
     ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
-    #plt.savefig("~/Dropbox/Public/map2.png")
+    ax.xaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_major_locator(plt.NullLocator())
+    ax.set_aspect('equal')
+    plt.tight_layout()
+    plt.savefig("/home/hannes/Dropbox/Public/map4.png")
     plt.show()
 
 def plot_polys_3d():

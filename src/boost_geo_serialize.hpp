@@ -41,17 +41,17 @@ namespace boost
 
 
         template<class Archive>
-            inline void serialize(Archive & ar, boost::geometry::model::ring<polar2_point> &ring, const unsigned int )
+            inline void serialize(Archive & ar, boost::geometry::model::ring<polar2_point, true, false> &ring, const unsigned int )
             {
                 ar & static_cast<std::vector<polar2_point>& >(ring);
             }
         template<class Archive>
-            inline void serialize(Archive & ar, boost::geometry::model::ring<cart2_point> &ring, const unsigned int )
+            inline void serialize(Archive & ar, boost::geometry::model::ring<cart2_point, true, false> &ring, const unsigned int )
             {
                 ar & static_cast<std::vector<cart2_point>& >(ring);
             }
         template<class Archive>
-            inline void serialize(Archive & ar, boost::geometry::model::ring<cart3_point> &ring, const unsigned int )
+            inline void serialize(Archive & ar, boost::geometry::model::ring<cart3_point, true, false> &ring, const unsigned int )
             {
                 ar & static_cast<std::vector<cart3_point>& >(ring);
             }

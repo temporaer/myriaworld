@@ -2,6 +2,7 @@
 #include "geo.hpp"
 #include <boost/numeric/bindings/traits/ublas_matrix.hpp> 
 #include <boost/math/quaternion.hpp>
+#include <boost/log/trivial.hpp>
 
 // this is from boost numeric bindings!
 #include <boost/numeric/bindings/atlas/clapack.hpp>
@@ -357,10 +358,10 @@ namespace myriaworld
             int res0 = atlas::getrf(A, ipiv);
             int res1 = atlas::getrs(A, ipiv, rhs);
             if(res0 != 0){
-                std::cout << "res0 != 0, A: " << A << std::endl;
+                BOOST_LOG_TRIVIAL(warning) << "res0 != 0, A: " << A;
             }
             if(res1 != 0){
-                std::cout << "res1 != 0, A: " << A << std::endl;
+                BOOST_LOG_TRIVIAL(warning) << "res1 != 0, A: " << A;
             }
             assert(res0 == 0);
             assert(res1 == 0);
@@ -400,7 +401,7 @@ namespace myriaworld
             cart3_point d0 = difference(t.outer()[1], t.outer()[0]);
             cart3_point d1 = difference(t.outer()[2], t.outer()[0]);
             cart3_point n0 = cross(d0, d1);
-            return sum(t.outer()[0], reltriapos_to_abs(d0, d1, n0, difference(p, t.outer()[0])));
+            return sum(t.outer()[0], reltriapos_to_abs(d0, d1, n0, p));
         }
         cart3_polygon construct_triangle_pair(
                 const cart3_polygon& t0, const cart3_polygon& t1,

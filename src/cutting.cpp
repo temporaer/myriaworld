@@ -46,6 +46,27 @@ namespace myriaworld
         }
     }
 
+    /// return same triangle, but in the xy plane.
+    cart3_polygon tria3dto2d(const cart3_polygon& p){
+        using namespace geo;
+        cart3_polygon q;
+
+        cart3_point d0 = difference(p.outer()[1], p.outer()[0]);
+        cart3_point d1 = difference(p.outer()[2], p.outer()[0]);
+        //cart3_point d2 = difference(p.outer()[2], p.outer()[1]);
+        //cart3_point n0 = cross(d0, d1);
+
+        double l0 = norm(d0);
+        double l1 = norm(d1);
+        //double l2 = norm(d2);
+        double costheta = fabs(dot(divide(d0,norm(d0)), divide(d1,norm(d1))));
+
+        q.outer().push_back(cart3_point(0, 0, 0));
+        q.outer().push_back(cart3_point(l0, 0, 0));
+        q.outer().push_back(cart3_point(costheta*l0, sin(acos(costheta))*l1, 0));
+        return q;
+    }
+
     void flatten(triangle_graph& g, double fact){
         std::vector < boost::graph_traits<triangle_graph>::vertex_descriptor >
             p(boost::num_vertices(g));
@@ -73,7 +94,7 @@ namespace myriaworld
             open_list.push_back(0);
 
             // first 3d point on map
-            pos_map[0].m_mappos = pos_map[0].m_c3_poly;
+            pos_map[0].m_mappos = tria3dto2d(pos_map[0].m_c3_poly);
 
 
             while(open_list.size() > 0){
@@ -106,7 +127,9 @@ namespace myriaworld
                     
                     for(auto& b : cb_map[targetv]){
                         bg::strategy::transform::from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> strategy;
+                        //bg::correct(b.m_s2_poly);
                         boost::geometry::transform(b.m_s2_poly, b.m_c3_poly, strategy);
+                        //bg::correct(b.m_c3_poly);
                         b.m_mappos = geo::tria2tria(
                                 pos_map[targetv].m_c3_poly,
                                 pos_map[targetv].m_mappos,

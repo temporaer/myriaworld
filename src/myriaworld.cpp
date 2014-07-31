@@ -10,6 +10,41 @@
 #include "boost_geo_serialize.hpp"
 #include "cached_function.hpp"
 
+void write_flattened(
+        const std::string& filename,
+        myriaworld::triangle_graph& g){
+    using myriaworld::polar2_point;
+    using myriaworld::cart3_point;
+    using myriaworld::triangle_graph;
+    using myriaworld::vertex_pos_t;
+    using myriaworld::shared_edge_t;
+    using myriaworld::country_bits_t;
+    using boost::edge_weight_t;
+    using boost::edge_weight;
+
+    boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+    boost::property_map<triangle_graph, edge_weight_t>::type weight_map = get(edge_weight, g);
+    boost::property_map<triangle_graph, shared_edge_t>::type se_map = get(shared_edge_t(), g);
+    boost::property_map<triangle_graph, country_bits_t>::type bs_map = get(country_bits_t(), g);
+
+    std::ofstream ofs(filename.c_str());
+    unsigned int idx=0;
+    auto vs = boost::vertices(g);
+    for(auto vit = vs.first; vit != vs.second; vit++){
+        auto& tbits = bs_map[*vit];
+        for(const auto& bit : tbits){
+            auto& poly = bit.m_mappos;
+            double color = 1;
+            ofs << "1 " << color << " ";
+            ofs << "0 " << idx++ << " ";
+            for(const auto& pt : poly.outer()){
+                ofs << pt.get<0>() << " " << pt.get<1>() << " ";
+            }
+            ofs << std::endl;
+        }
+    }
+}
+
 void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
     BOOST_LOG_TRIVIAL(info) << "Writing to file: " << filename;
     using myriaworld::polar2_point;
@@ -31,13 +66,15 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
     }
 
     std::ofstream ofs(filename.c_str());
-    auto optional_print_s2 = [&](double color, const polar2_point& a, const polar2_point& b){
-        if(myriaworld::geo::crosses_dateline(a, b))
-            return;
-        ofs << color << " " << a.get<0>() << " " << a.get<1>()
-            << " "          << b.get<0>() << " " << b.get<1>() << std::endl;
-    };
+    //auto optional_print_s2 = [&](double color, const polar2_point& a, const polar2_point& b){
+    //    if(myriaworld::geo::crosses_dateline(a, b))
+    //        return;
+    //    ofs << color << " " << a.get<0>() << " " << a.get<1>()
+    //        << " "          << b.get<0>() << " " << b.get<1>() << std::endl;
+    //};
     auto optional_print_c2 = [&](double color, const cart3_point& a, const cart3_point& b){
+        //if(a.get<2>() < 0) return;
+        //if(b.get<2>() < 0) return;
         ofs << color << " " << a.get<0>() << " " << a.get<1>()
             << " "          << b.get<0>() << " " << b.get<1>() << std::endl;
     };
@@ -114,4 +151,5 @@ int main(){
     determine_cuttings(g);
     flatten(g, 1.);
     write_s2centroids("triagrid.txt", g);
+    write_flattened("flattened.txt", g);
 }
