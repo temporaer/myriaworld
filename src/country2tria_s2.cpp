@@ -53,7 +53,7 @@ namespace myriaworld
             int min_level = S2::kMaxWidth.GetMinLevel(diameter);
             coverer.set_min_level(min_level);
             coverer.set_max_level(min_level+4);
-            coverer.set_max_cells(20);
+            coverer.set_max_cells(50);
 
             std::vector<S2CellId> cells;
             coverer.GetCovering(*cptr, &cells);
@@ -95,7 +95,7 @@ namespace myriaworld
                 double diameter = tria.GetCapBound().angle().radians();
                 int min_level = S2::kMaxWidth.GetMinLevel(diameter);
                 coverer.set_min_level(min_level);
-                coverer.set_max_level(min_level+2);
+                coverer.set_max_level(min_level+5);
                 coverer.set_max_cells(5);
                 coverer.GetCovering(tria, &triacells);
             }
@@ -121,18 +121,23 @@ namespace myriaworld
                 if(!mayintersect)
                     continue;
 
+#if 0
                 S2Polygon isect;
                 isect.InitToIntersectionSloppy(cptr.get(), &tria, S1Angle::Degrees(0.000001));
                 //isect.InitToIntersection(cptr.get(), &tria);
-#if 0
+#else
                 std::vector<S2Polygon*> pieces;
                 for (const auto& id : flat_cells[cidx])
                 {
                     S2Cell cell(id);
-                    if(cptr->MayIntersect(cell)){
-                        //S2Polygon cellpoly(cell);
+                    if(tria.MayIntersect(cell)){
+                        S2Polygon cpiece;
+                        S2Polygon cellpoly(cell);
+                        cpiece.InitToIntersection(cptr.get(), &cellpoly);
+                        if(cpiece.num_loops() == 0)
+                            continue;
                         auto piece = new S2Polygon();
-                        piece->InitToIntersection(&tria, cptr.get());
+                        piece->InitToIntersection(&cpiece, &tria);
                         if(piece->num_loops() == 0)
                             delete piece;
                         else
@@ -149,12 +154,12 @@ namespace myriaworld
                 {
                     myriaworld::polar2_polygon s2poly;
                     S2Loop& loop = *isect.loop(i);
-                    if(loop.is_hole())
-                        continue;
+                    //if(loop.is_hole())
+                        //continue;
                     //assert(!loop.is_hole());
                     int n_vert = loop.num_vertices();
                     // our polygons are not closed!
-                    for (int j = 0; j < n_vert-1; ++j)
+                    for (int j = 0; j < n_vert; ++j)
                     {
                         S2Point p = loop.vertex(j);
                         S2LatLng s2p(p);

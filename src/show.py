@@ -50,30 +50,26 @@ def plot_polys_2d(fn):
     linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
     linecol.set_array(line_colors)
     #trace()
-    ax.add_collection(linecol)
+    #ax.add_collection(linecol)
 
     ##fe = FinElem("src/tbits.txt", latlng=True)
-    #fe = FinElem("flattened.txt", latlng=True)
-    #verts = fe.polys
-    #colors = fe.colors
-    ##colors = np.random.uniform(size=len(verts))
-    #ax.add_collection(matplotlib.collections.PolyCollection(verts,
-    #    array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
+    fe = FinElem("flattened.txt", latlng=True)
+    verts = fe.polys
+    colors = fe.colors
+    #colors = np.random.uniform(size=len(verts))
+    ax.add_collection(matplotlib.collections.PolyCollection(verts,
+        array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
 
-    #ax.scatter(
-    #    [x[0] for x in fe.centroids],
-    #    [x[1] for x in fe.centroids])
-
-    #ax.set_xlim(-180, 180)
-    #ax.set_ylim(-90, 90)
-    lines = lines.reshape(-1, 4)
-    ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
-    ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
+    ax.set_xlim(-3, 3)
+    ax.set_ylim(-3, 3)
+    if False:
+        lines = lines.reshape(-1, 4)
+        ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
+        ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
     #ax.xaxis.set_major_locator(plt.NullLocator())
     #ax.yaxis.set_major_locator(plt.NullLocator())
     #ax.set_aspect('equal')
     plt.tight_layout()
-    plt.savefig("/home/hannes/Dropbox/Public/map4.png")
     plt.show()
 
 def plot_polys_3d():

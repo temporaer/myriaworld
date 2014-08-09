@@ -147,7 +147,7 @@ myriaworld::triangle_graph side_effect_wrap(
 int main(){
     using namespace myriaworld;
     auto countries = read_countries("easy.txt");
-    auto g = get_triangle_graph(5);
+    auto g = get_triangle_graph(4);
     fscache::function_cache c;
     //g = c("country2tria", 0, side_effect_wrap, country2tria_s2, g, countries);
     country2tria_s2(g, countries);
