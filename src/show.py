@@ -50,15 +50,15 @@ def plot_polys_2d(fn):
     linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
     linecol.set_array(line_colors)
     #trace()
-    #ax.add_collection(linecol)
+    ax.add_collection(linecol)
 
     ##fe = FinElem("src/tbits.txt", latlng=True)
-    fe = FinElem("flattened.txt", latlng=True)
-    verts = fe.polys
-    colors = fe.colors
-    #colors = np.random.uniform(size=len(verts))
-    ax.add_collection(matplotlib.collections.PolyCollection(verts,
-        array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
+    #fe = FinElem("flattened.txt", latlng=True)
+    #verts = fe.polys
+    #colors = fe.colors
+    ##colors = np.random.uniform(size=len(verts))
+    #ax.add_collection(matplotlib.collections.PolyCollection(verts,
+    #    array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
 
     #ax.scatter(
     #    [x[0] for x in fe.centroids],
@@ -69,9 +69,9 @@ def plot_polys_2d(fn):
     lines = lines.reshape(-1, 4)
     ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
     ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
-    ax.xaxis.set_major_locator(plt.NullLocator())
-    ax.yaxis.set_major_locator(plt.NullLocator())
-    ax.set_aspect('equal')
+    #ax.xaxis.set_major_locator(plt.NullLocator())
+    #ax.yaxis.set_major_locator(plt.NullLocator())
+    #ax.set_aspect('equal')
     plt.tight_layout()
     plt.savefig("/home/hannes/Dropbox/Public/map4.png")
     plt.show()
@@ -116,22 +116,36 @@ def plot_trias_3d():
 
 def generate_cpp_readable_file(filename):
     with open(filename, "w") as f:
-        countries = S.Reader("data/ne_10m_admin_0_countries")
+        countries = S.Reader("../data/ne_10m_admin_0_countries")
+        oceans = S.Reader("../data/ne_10m_ocean")
         for r, c in zip(countries.iterRecords(), countries.iterShapes()):
             f.write("%d " % len(c.parts))
             s = np.array(np.array(c.points))
             c.parts.append(len(s))
-            for a, b in zip(c.parts, c.parts[1:]): 
+            # shapefiles are in cw order, but
+            # google s2 wants ccw order
+            for a, b in reversed(zip(c.parts, c.parts[1:])):
                 f.write("%d " % (b - a))
-                f.write(" ".join("%2.8f" % x for x in s[a:b].flatten()))
+                f.write(" ".join("%2.20f" % x for x in s[a:b].flatten()))
                 f.write("\n")
+        #cntocean = 0
+        #for r, c in zip(oceans.iterRecords(), oceans.iterShapes()):
+        #    cntocean += 1
+        #    f.write("%d " % len(c.parts))
+        #    s = np.array(np.array(c.points))
+        #    c.parts.append(len(s))
+        #    for a, b in zip(c.parts, c.parts[1:]): 
+        #        f.write("%d " % (b - a))
+        #        f.write(" ".join("%2.20f" % x for x in s[a:b].flatten()))
+        #        f.write("\n")
+        #print "Ocean Polygons: ", cntocean
 
 def main():
-    countries = S.Reader("data/ne_10m_admin_0_countries")
-    boundaries = S.Reader("data/ne_10m_admin_0_boundary_lines_land")
-    popp = S.Reader("data/ne_10m_populated_places")
-    triang = SPHTriang("sphtr.latlng")
-    fe = FinElem("fe.txt")
+    countries = S.Reader("../data/ne_10m_ocean")
+    boundaries = S.Reader("../data/ne_10m_admin_0_boundary_lines_land")
+    popp = S.Reader("../data/ne_10m_populated_places")
+    #triang = SPHTriang("sphtr.latlng")
+    #fe = FinElem("fe.txt")
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -147,8 +161,8 @@ def main():
     ax.add_collection(matplotlib.collections.PolyCollection(verts,
         array=np.array(colors), edgecolor="black", lw=1))
 
-    ax.add_collection(matplotlib.collections.PolyCollection(fe.polys,
-        edgecolor="green", facecolor=None, lw=1, alpha=0.2))
+    #ax.add_collection(matplotlib.collections.PolyCollection(fe.polys,
+        #edgecolor="green", facecolor=None, lw=1, alpha=0.2))
 
     rankdot = defaultdict(list)
     for r, s in zip(popp.iterRecords(), popp.iterShapes()):

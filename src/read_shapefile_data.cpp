@@ -22,6 +22,7 @@ namespace myriaworld
         double minlng= std::numeric_limits<double>::infinity(),
                maxlng=-std::numeric_limits<double>::infinity();
         std::vector<country> countries;
+        int cidx = 0;
         while(ifs){
             ifs >> n_poly;
             if(n_poly == 0)
@@ -31,27 +32,31 @@ namespace myriaworld
                 ifs >> n_pts;
                 polar2_polygon poly;
                 for(unsigned p=0; p<n_pts; p++){
-                    ifs >> lat >> lng;
+                    ifs >> lng >> lat;
                     minlat = std::min(minlat, lat);
                     minlng = std::min(minlng, lng);
                     maxlat = std::max(maxlat, lat);
                     maxlng = std::max(maxlng, lng);
                     append(poly, polar2_point(lat, lng));
                 }
-                //BOOST_LOG_TRIVIAL(debug) << " - poly...";
-                boost::geometry::correct(poly);
+
+                // NOTE we assume that all countries are specified
+                // in ccw order
+
                 //polar2_polygon poly2;
                 //boost::geometry::simplify(poly, poly2, 0.001);
                 //boost::geometry::correct(poly2);
                 //if(poly2.outer().size() > 4)
-                //c.m_s2_polys.push_back(poly2);
+                    //c.m_s2_polys.push_back(poly2);
                 c.m_s2_polys.push_back(poly);
             }
             //assert(c.size() == n_poly);
             //BOOST_LOG_TRIVIAL(debug) << "# country...";
+            if(cidx <= 35)
             if(c.m_s2_polys.size() > 0)
                 countries.push_back(c);
             //assert(countries.back().size() == n_poly);
+            cidx ++;
         }
         BOOST_LOG_TRIVIAL(info) << "countries -- minlat: "<< minlat << " maxlat: "<<maxlat;
         BOOST_LOG_TRIVIAL(info) << "countries -- minlng: "<< minlng << " maxlng: "<<maxlng;

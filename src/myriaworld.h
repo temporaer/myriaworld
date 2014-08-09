@@ -13,9 +13,9 @@ namespace myriaworld{
     typedef bg::model::point<double, 2, bg::cs::cartesian> cart2_point;
     typedef bg::model::point<double, 3, bg::cs::cartesian> cart3_point;
 
-    typedef bg::model::polygon<cart2_point  , true, false> cart2_polygon;
-    typedef bg::model::polygon<cart3_point  , true, false> cart3_polygon;
-    typedef bg::model::polygon<polar2_point , true, false> polar2_polygon;
+    typedef bg::model::polygon<cart2_point  , false, false> cart2_polygon;
+    typedef bg::model::polygon<cart3_point  , false, false> cart3_polygon;
+    typedef bg::model::polygon<polar2_point , false, false> polar2_polygon;
 
     typedef bg::model::multi_polygon<polar2_polygon> polar2_multipolygon;
     typedef bg::model::multi_polygon<cart3_polygon> cart3_multipolygon;

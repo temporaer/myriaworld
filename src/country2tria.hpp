@@ -6,5 +6,6 @@
 namespace myriaworld
 {
     void country2tria(triangle_graph& g, const std::vector<country>& countries);
+    void country2tria_s2(triangle_graph& g, const std::vector<country>& countries);
 }
 #endif /* __COUNTRY2TRIA_HPP__ */
