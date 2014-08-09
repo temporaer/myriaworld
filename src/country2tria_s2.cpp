@@ -159,8 +159,8 @@ namespace myriaworld
                         S2Point p = loop.vertex(j);
                         S2LatLng s2p(p);
                         s2poly.outer().push_back(
-                                polar2_point(s2p.lat().degrees(),
-                                    s2p.lng().degrees()));
+                                polar2_point(s2p.lng().degrees(),
+                                    s2p.lat().degrees()));
                     }
                     country_bit bit;
                     bit.m_s2_poly = s2poly;

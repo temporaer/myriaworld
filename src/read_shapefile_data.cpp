@@ -52,7 +52,7 @@ namespace myriaworld
             }
             //assert(c.size() == n_poly);
             //BOOST_LOG_TRIVIAL(debug) << "# country...";
-            if(cidx <= 35)
+            //if(cidx <= 36)
             if(c.m_s2_polys.size() > 0)
                 countries.push_back(c);
             //assert(countries.back().size() == n_poly);
@@ -136,11 +136,13 @@ namespace myriaworld
             std::vector<cart3_polygon> ctriangles = triangulate_sphere(maxlevel);
             std::vector<polar2_polygon> triangles(ctriangles.size());
 
-            for (unsigned int i = 0; i < triangles.size(); ++i)
             {
                 boost::geometry::strategy::transform::from_cartesian_3_to_spherical_equatorial_2<cart3_point, polar2_point> strategy;
-                boost::geometry::transform(ctriangles[i], triangles[i], strategy);
-                triangles[i] = geo::rotated(triangles[i], 2.1828, 2.1725);
+                for (unsigned int i = 0; i < triangles.size(); ++i)
+                {
+                    boost::geometry::transform(ctriangles[i], triangles[i], strategy);
+                    //triangles[i] = geo::rotated(triangles[i], 2.1828, 2.1725);
+                }
             }
 
             triangle_graph tg(triangles.size());
