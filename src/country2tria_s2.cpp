@@ -33,31 +33,36 @@ namespace myriaworld
                     S2LatLng s2p(S2LatLng::FromDegrees(
                                 v.get<0>(),
                                 v.get<1>()));
-                    //assert(s2p.is_valid());
                     s2p = s2p.Normalized();
                     pts.push_back(s2p.ToPoint());
                 }
-                //pts.push_back(pts[0]);
-                //assert(S2::RobustCCW(pts[0], pts[1], pts[2]) != 0);
-                S2Loop loop(pts);
-                pb.AddLoop(&loop);
-                //loops.push_back(new S2Loop(pts));
+                loops.push_back(new S2Loop(pts));
+                //S2Loop loop(pts);
+                //pb.AddLoop(&loop);
             }
-            //auto cptr = std::make_shared<S2Polygon>(&loops);
-            auto cptr = std::make_shared<S2Polygon>();
-            pb.AssemblePolygon(cptr.get(), NULL);
-            flat_countries.push_back(cptr);
+            auto cptr = std::make_shared<S2Polygon>(&loops);
+            //auto cptr = std::make_shared<S2Polygon>();
+            //pb.AssemblePolygon(cptr.get(), NULL);
 
+            // now take the country apart into cells covering it
             S2RegionCoverer coverer;
             double diameter = 2*cptr->GetCapBound().angle().radians();
             int min_level = S2::kMaxWidth.GetMinLevel(diameter);
             coverer.set_min_level(min_level);
-            coverer.set_max_level(min_level+4);
+            coverer.set_max_level(min_level+3);
             coverer.set_max_cells(50);
 
             std::vector<S2CellId> cells;
             coverer.GetCovering(*cptr, &cells);
-            flat_cells.push_back(cells);
+
+            for(const auto& id0 : cells){
+                auto piece = std::make_shared<S2Polygon>();
+                     S2Cell cell0(id0);
+                     S2Polygon cellp0(cell0);
+                piece->InitToIntersection(cptr.get(), &cellp0);
+                flat_countries.push_back(piece);
+                flat_cells.push_back({id0});
+            }
             n_cells += cells.size();
         }
         BOOST_LOG_TRIVIAL(info) << "avg cells/country: "<<n_cells/(float)countries.size();
@@ -89,55 +94,22 @@ namespace myriaworld
                 tria.Init(&loops);
             }
 
-            std::vector<S2CellId> triacells;
-            {
-                S2RegionCoverer coverer;
-                double diameter = tria.GetCapBound().angle().radians();
-                int min_level = S2::kMaxWidth.GetMinLevel(diameter);
-                coverer.set_min_level(min_level);
-                coverer.set_max_level(min_level+5);
-                coverer.set_max_cells(5);
-                coverer.GetCovering(tria, &triacells);
-            }
             //for(const auto& cptr : flat_countries){
             for (unsigned int cidx = 0; cidx < flat_countries.size(); ++cidx)
             {
                 std::shared_ptr<S2Polygon> cptr = flat_countries[cidx];
-
-                bool mayintersect = false;
-                for(const auto& id0 : flat_cells[cidx]){
-                    S2Cell cell0(id0);
-                    S2Polygon cellp0(cell0);
-                    for(const auto& id1 : triacells){
-                        S2Cell cell1(id1);
-                        if(cellp0.MayIntersect(cell1)){
-                            mayintersect = true;
-                            break;
-                        }
-                    }
-                    if(mayintersect)
-                        break;
-                }
-                if(!mayintersect)
-                    continue;
-
 #if 0
                 S2Polygon isect;
-                isect.InitToIntersectionSloppy(cptr.get(), &tria, S1Angle::Degrees(0.000001));
-                //isect.InitToIntersection(cptr.get(), &tria);
+                //isect.InitToIntersectionSloppy(cptr.get(), &tria, S1Angle::Degrees(0.000001));
+                isect.InitToIntersection(cptr.get(), &tria);
 #else
                 std::vector<S2Polygon*> pieces;
                 for (const auto& id : flat_cells[cidx])
                 {
                     S2Cell cell(id);
                     if(tria.MayIntersect(cell)){
-                        S2Polygon cpiece;
-                        S2Polygon cellpoly(cell);
-                        cpiece.InitToIntersection(cptr.get(), &cellpoly);
-                        if(cpiece.num_loops() == 0)
-                            continue;
                         auto piece = new S2Polygon();
-                        piece->InitToIntersection(&cpiece, &tria);
+                        piece->InitToIntersection(cptr.get(), &tria);
                         if(piece->num_loops() == 0)
                             delete piece;
                         else
@@ -154,8 +126,8 @@ namespace myriaworld
                 {
                     myriaworld::polar2_polygon s2poly;
                     S2Loop& loop = *isect.loop(i);
-                    //if(loop.is_hole())
-                        //continue;
+                    if(loop.is_hole())
+                        continue;
                     //assert(!loop.is_hole());
                     int n_vert = loop.num_vertices();
                     // our polygons are not closed!
@@ -164,7 +136,8 @@ namespace myriaworld
                         S2Point p = loop.vertex(j);
                         S2LatLng s2p(p);
                         s2poly.outer().push_back(
-                                polar2_point(s2p.lng().degrees(),
+                                polar2_point(
+                                    s2p.lng().degrees(),
                                     s2p.lat().degrees()));
                     }
                     country_bit bit;

@@ -50,19 +50,19 @@ def plot_polys_2d(fn):
     linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
     linecol.set_array(line_colors)
     #trace()
-    #ax.add_collection(linecol)
+    ax.add_collection(linecol)
 
     ##fe = FinElem("src/tbits.txt", latlng=True)
     fe = FinElem("flattened.txt", latlng=True)
     verts = fe.polys
     colors = fe.colors
     #colors = np.random.uniform(size=len(verts))
-    ax.add_collection(matplotlib.collections.PolyCollection(verts,
-        array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
+    #ax.add_collection(matplotlib.collections.PolyCollection(verts,
+        #array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
 
-    ax.set_xlim(-3, 3)
-    ax.set_ylim(-3, 3)
-    if False:
+    ax.set_xlim(-5, 2)
+    ax.set_ylim(-1, 7)
+    if True:
         lines = lines.reshape(-1, 4)
         ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
         ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
@@ -114,6 +114,18 @@ def generate_cpp_readable_file(filename):
     with open(filename, "w") as f:
         countries = S.Reader("../data/ne_10m_admin_0_countries")
         oceans = S.Reader("../data/ne_10m_ocean")
+        cntocean = 0
+        for r, c in zip(oceans.iterRecords(), oceans.iterShapes()):
+            f.write("%d " % len(c.parts))
+            s = np.array(np.array(c.points))
+            c.parts.append(len(s))
+            for a, b in zip(c.parts, c.parts[1:]):
+                cntocean += 1
+                f.write("%d " % (b - a))
+                f.write(" ".join("%2.20f" % x for x in s[a:b].flatten()))
+                f.write("\n")
+        print "Ocean Polygons: ", cntocean
+        return
         for r, c in zip(countries.iterRecords(), countries.iterShapes()):
             f.write("%d " % len(c.parts))
             s = np.array(np.array(c.points))
@@ -124,17 +136,6 @@ def generate_cpp_readable_file(filename):
                 f.write("%d " % (b - a))
                 f.write(" ".join("%2.20f" % x for x in s[a:b].flatten()))
                 f.write("\n")
-        #cntocean = 0
-        #for r, c in zip(oceans.iterRecords(), oceans.iterShapes()):
-        #    cntocean += 1
-        #    f.write("%d " % len(c.parts))
-        #    s = np.array(np.array(c.points))
-        #    c.parts.append(len(s))
-        #    for a, b in zip(c.parts, c.parts[1:]): 
-        #        f.write("%d " % (b - a))
-        #        f.write(" ".join("%2.20f" % x for x in s[a:b].flatten()))
-        #        f.write("\n")
-        #print "Ocean Polygons: ", cntocean
 
 def main():
     countries = S.Reader("../data/ne_10m_ocean")

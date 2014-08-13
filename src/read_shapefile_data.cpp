@@ -5,6 +5,7 @@
 #include <boost/geometry/strategies/transform.hpp>
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include "geo.hpp"
 #include "SPHEmesh.hpp"
 
@@ -14,6 +15,30 @@ namespace bg = boost::geometry;
 namespace myriaworld
 {
     std::vector<country> read_countries(const std::string& filename){
+        std::ifstream ifs(filename.c_str());
+        std::vector<country> ret;
+        while(ifs){
+            std::string line;
+            std::vector<std::string> v;
+            std::getline(ifs, line);
+            boost::split(v, line, boost::is_any_of(";"));
+            if(v.size() != 2)
+                break;
+
+            country c;
+            c.m_name = v[0];
+            if(v[1].find("MULTIPOLY") != std::string::npos){
+                bg::read_wkt(v[1], c.m_s2_polys);
+            }else{
+                polar2_polygon poly2;
+                bg::read_wkt(v[1], poly2);
+                c.m_s2_polys.push_back(poly2);
+            }
+            ret.push_back(c);
+        }
+        return ret;
+    }
+    std::vector<country> read_countries2(const std::string& filename){
         std::ifstream ifs(filename.c_str());
         unsigned n_poly, n_pts;
         double lat, lng;
