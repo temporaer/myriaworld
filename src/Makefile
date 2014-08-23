@@ -51,6 +51,9 @@ cutting.o: cutting.cpp myriaworld.h.gch
 myriaworld.o: myriaworld.cpp myriaworld.h.gch
 	$(CXX) $(CXXFLAGS) -c myriaworld.cpp -o $@
 
+SPHEmesh: SPHEmesh_main.cpp SPHEmesh.cpp SPHEmesh.hpp
+	$(CXX) $(CXXFLAGS) SPHEmesh_main.cpp SPHEmesh.cpp -o $@
+
 clean:
 	rm -f *.o
 	rm -f myriaworld.h.gch

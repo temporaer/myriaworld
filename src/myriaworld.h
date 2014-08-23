@@ -13,6 +13,9 @@ namespace myriaworld{
     typedef bg::model::point<double, 2, bg::cs::cartesian> cart2_point;
     typedef bg::model::point<double, 3, bg::cs::cartesian> cart3_point;
 
+    // true == clockwise, closed
+    // Google S2 requires CCW!
+    // S2 polygons consist of loops, and loops are /implicitly/ closed.
     typedef bg::model::polygon<cart2_point  , false, false> cart2_polygon;
     typedef bg::model::polygon<cart3_point  , false, false> cart3_polygon;
     typedef bg::model::polygon<polar2_point , false, false> polar2_polygon;

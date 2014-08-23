@@ -17,6 +17,7 @@ namespace myriaworld
     std::vector<country> read_countries(const std::string& filename){
         std::ifstream ifs(filename.c_str());
         std::vector<country> ret;
+        unsigned int cnt=0;
         while(ifs){
             std::string line;
             std::vector<std::string> v;
@@ -27,14 +28,30 @@ namespace myriaworld
 
             country c;
             c.m_name = v[0];
+
+            BOOST_LOG_TRIVIAL(debug) << "Reading " << c.m_name;
             if(v[1].find("MULTIPOLY") != std::string::npos){
                 bg::read_wkt(v[1], c.m_s2_polys);
+                for(auto & p : c.m_s2_polys){
+                    // wkt is closed, we want non-closed entries
+                    p.outer().pop_back();
+                    // WKT is CW, Google S2 wants CCW.
+                    std::reverse(p.outer().begin(), p.outer().end());
+                }
             }else{
                 polar2_polygon poly2;
                 bg::read_wkt(v[1], poly2);
+
+                // wkt is closed, we want non-closed entries
+                poly2.outer().pop_back();
+                // WKT is CW, Google S2 wants CCW.
+                std::reverse(poly2.outer().begin(), poly2.outer().end());
+
                 c.m_s2_polys.push_back(poly2);
             }
             ret.push_back(c);
+            if(cnt++ > 10) // TODO remove
+                break;
         }
         return ret;
     }
@@ -166,6 +183,9 @@ namespace myriaworld
                 for (unsigned int i = 0; i < triangles.size(); ++i)
                 {
                     boost::geometry::transform(ctriangles[i], triangles[i], strategy);
+
+                    //BOOST_LOG_TRIVIAL(info) << "Triangle Area: " << bg::area(ctriangles[i]);
+                    //BOOST_LOG_TRIVIAL(info) << "Triangle Area:" << bg::area(triangles[i]);
                     //triangles[i] = geo::rotated(triangles[i], 2.1828, 2.1725);
                 }
             }
@@ -263,13 +283,13 @@ namespace myriaworld
             auto vs = vertices(g);
             for(auto vit = vs.first; vit!=vs.second; vit++){
                 auto p = pos_map[*vit].m_s2_poly;
-                bg::correct(p);
+                //bg::correct(p);
                 area_map[*vit] = bg::area(p);
 
                 double sum = 0.0;
                 for(const auto& p_ : bits_map[*vit]){
                     auto p = p_.m_s2_poly;
-                    bg::correct(p);
+                    //bg::correct(p);
                     sum += bg::area(p);
                 }
                 sum /= area_map[*vit];

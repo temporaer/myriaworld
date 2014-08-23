@@ -110,33 +110,6 @@ def plot_trias_3d():
     ax.set_xlabel("x")
     plt.show()
 
-def generate_cpp_readable_file(filename):
-    with open(filename, "w") as f:
-        countries = S.Reader("../data/ne_10m_admin_0_countries")
-        oceans = S.Reader("../data/ne_10m_ocean")
-        cntocean = 0
-        for r, c in zip(oceans.iterRecords(), oceans.iterShapes()):
-            f.write("%d " % len(c.parts))
-            s = np.array(np.array(c.points))
-            c.parts.append(len(s))
-            for a, b in zip(c.parts, c.parts[1:]):
-                cntocean += 1
-                f.write("%d " % (b - a))
-                f.write(" ".join("%2.20f" % x for x in s[a:b].flatten()))
-                f.write("\n")
-        print "Ocean Polygons: ", cntocean
-        return
-        for r, c in zip(countries.iterRecords(), countries.iterShapes()):
-            f.write("%d " % len(c.parts))
-            s = np.array(np.array(c.points))
-            c.parts.append(len(s))
-            # shapefiles are in cw order, but
-            # google s2 wants ccw order
-            for a, b in reversed(zip(c.parts, c.parts[1:])):
-                f.write("%d " % (b - a))
-                f.write(" ".join("%2.20f" % x for x in s[a:b].flatten()))
-                f.write("\n")
-
 def main():
     countries = S.Reader("../data/ne_10m_ocean")
     boundaries = S.Reader("../data/ne_10m_admin_0_boundary_lines_land")
@@ -191,7 +164,6 @@ def teststreamplot():
     plt.show()
 
 if __name__ == "__main__":
-    #generate_cpp_readable_file("easy.txt")
     plot_polys_2d("triagrid.txt")
     #main()
     #teststreamplot()

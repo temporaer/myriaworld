@@ -99,7 +99,7 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
         for(const auto& bit : bs_map[*vit]){
             const auto& b = bit.m_s2_poly.outer();
             for (unsigned int i = 0; i < b.size(); ++i){
-                optional_print_s2(1, b[i], b[(i + 1)%b.size()]);
+                optional_print_s2(10, b[i], b[(i + 1)%b.size()]);
             }
         }
     }
@@ -118,14 +118,14 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
         //    BOOST_LOG_TRIVIAL(info) << "wrong number of vertices: " << p.m_mappos.outer().size();
         //    continue;
         //}
-        //auto s = p.m_s2_poly.outer()[se.shared_l0];
-        //auto t = p.m_s2_poly.outer()[se.shared_l1];
-        auto s = p.m_mappos.outer()[se.shared_l0];
-        auto t = p.m_mappos.outer()[se.shared_l1];
+        auto s = p.m_s2_poly.outer()[se.shared_l0];
+        auto t = p.m_s2_poly.outer()[se.shared_l1];
+        //auto s = p.m_mappos.outer()[se.shared_l0];
+        //auto t = p.m_mappos.outer()[se.shared_l1];
         if(!se_map[*eit].is_cut)
             ;//optional_print_c2(weight_map[*eit], s, t);
         else
-            optional_print_c2(weight_map[*eit], s, t);
+            optional_print_s2(weight_map[*eit], s, t);
     }
 }
 

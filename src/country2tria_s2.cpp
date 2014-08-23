@@ -23,10 +23,11 @@ namespace myriaworld
         boost::progress_display show_progress0(countries.size());
         std::size_t n_cells = 0;
         for(const auto& c : countries){
-            ++show_progress0;
+            //++show_progress0;
             std::vector<S2Loop*> loops;
             S2PolygonBuilderOptions pbo = S2PolygonBuilderOptions::UNDIRECTED_XOR();
             S2PolygonBuilder pb(pbo);
+            BOOST_LOG_TRIVIAL(info) << c.m_name;
             for(const auto& poly : c.m_s2_polys){
                 std::vector<S2Point> pts;
                 for(const auto& v : poly.outer()){
@@ -36,11 +37,21 @@ namespace myriaworld
                     s2p = s2p.Normalized();
                     pts.push_back(s2p.ToPoint());
                 }
-                loops.push_back(new S2Loop(pts));
+
+                S2Loop* loop = new S2Loop(pts);
+                if(loop->GetArea() > 10){
+                    delete loop;
+                    std::reverse(pts.begin(), pts.end());
+                    loop = new S2Loop(pts);
+                }
+                BOOST_LOG_TRIVIAL(info) << "    Country Loop Area: " << loop->GetArea();
+                loops.push_back(loop);
                 //S2Loop loop(pts);
                 //pb.AddLoop(&loop);
             }
             auto cptr = std::make_shared<S2Polygon>(&loops);
+            double carea = cptr->GetArea();
+            BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
             //auto cptr = std::make_shared<S2Polygon>();
             //pb.AssemblePolygon(cptr.get(), NULL);
 
@@ -55,11 +66,20 @@ namespace myriaworld
             std::vector<S2CellId> cells;
             coverer.GetCovering(*cptr, &cells);
 
+            // For each cell intersecting the country, determine the piece
+            // which is in that cell.
             for(const auto& id0 : cells){
                 auto piece = std::make_shared<S2Polygon>();
-                     S2Cell cell0(id0);
-                     S2Polygon cellp0(cell0);
+                S2Cell cell0(id0);
+                S2Polygon cellp0(cell0);
                 piece->InitToIntersection(cptr.get(), &cellp0);
+                assert(piece->GetArea() < 10);
+                BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
+                BOOST_LOG_TRIVIAL(info) << "Piece Area: " << piece->GetArea();
+                if(piece->GetArea() < 0.00001)
+                    continue;
+                if(piece->GetArea() > carea + 0.0000001)
+                    continue;
                 flat_countries.push_back(piece);
                 flat_cells.push_back({id0});
             }
@@ -86,9 +106,10 @@ namespace myriaworld
                     s2p = s2p.Normalized();
                     v.push_back(s2p.ToPoint());
                 }
-                if(S2::SimpleCCW(v[0], v[1], v[2])<0)
-                    std::swap(v[0], v[2]);
+                //if(S2::SimpleCCW(v[0], v[1], v[2])<0)
+                    //std::swap(v[0], v[2]);
                 S2Loop* loop = new S2Loop(v);
+                assert(loop->GetArea() < 0.1);
                 std::vector<S2Loop*> loops;
                 loops.push_back(loop);
                 tria.Init(&loops);
@@ -110,6 +131,12 @@ namespace myriaworld
                     if(tria.MayIntersect(cell)){
                         auto piece = new S2Polygon();
                         piece->InitToIntersection(cptr.get(), &tria);
+                        BOOST_LOG_TRIVIAL(info) << "---------------------";
+                        BOOST_LOG_TRIVIAL(info) << "Country     : " << cptr->GetArea();
+                        BOOST_LOG_TRIVIAL(info) << "Tria        : " << tria.GetArea();
+                        BOOST_LOG_TRIVIAL(info) << "Intersection: " << piece->GetArea();
+                        assert(piece->GetArea() < 10);
+                        assert(piece->GetArea() < cptr->GetArea() + tria.GetArea());
                         if(piece->num_loops() == 0)
                             delete piece;
                         else
@@ -122,6 +149,11 @@ namespace myriaworld
                 int n_loops = isect.num_loops();
                 if(n_loops == 0)
                     continue;
+                if(isect.GetArea() < 0.00001)
+                    continue;
+                BOOST_LOG_TRIVIAL(info) << "Union:        " << isect.GetArea();
+                assert(isect.GetArea() < 10);
+                assert(isect.GetArea() <= tria.GetArea() + 0.000001);
                 for (int i = 0; i < n_loops; ++i)
                 {
                     myriaworld::polar2_polygon s2poly;
