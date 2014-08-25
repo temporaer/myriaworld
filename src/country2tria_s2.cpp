@@ -16,7 +16,7 @@ namespace myriaworld
         BOOST_LOG_TRIVIAL(info) << "Determining overlap btw triangles, countries via Google S2";
 
         typedef std::shared_ptr<S2Polygon> poly_ptr;
-        std::vector<poly_ptr> flat_countries;
+        std::vector<std::vector<poly_ptr> > flat_countries;
         std::vector<std::vector<S2CellId> > flat_cells;
 
         BOOST_LOG_TRIVIAL(info) << "...convert from boost to S2 format";
@@ -68,6 +68,8 @@ namespace myriaworld
 
             // For each cell intersecting the country, determine the piece
             // which is in that cell.
+            std::vector<poly_ptr> flat_country;
+            std::vector<S2CellId> flat_cell;
             for(const auto& id0 : cells){
                 auto piece = std::make_shared<S2Polygon>();
                 S2Cell cell0(id0);
@@ -80,9 +82,11 @@ namespace myriaworld
                     continue;
                 if(piece->GetArea() > carea + 0.0000001)
                     continue;
-                flat_countries.push_back(piece);
-                flat_cells.push_back({id0});
+                flat_country.push_back(piece);
+                flat_cell.push_back(id0);
             }
+            flat_countries.push_back(flat_country);
+            flat_cells.push_back(flat_cell);
             n_cells += cells.size();
         }
         BOOST_LOG_TRIVIAL(info) << "avg cells/country: "<<n_cells/(float)countries.size();
@@ -118,15 +122,18 @@ namespace myriaworld
             //for(const auto& cptr : flat_countries){
             for (unsigned int cidx = 0; cidx < flat_countries.size(); ++cidx)
             {
-                std::shared_ptr<S2Polygon> cptr = flat_countries[cidx];
 #if 0
                 S2Polygon isect;
                 //isect.InitToIntersectionSloppy(cptr.get(), &tria, S1Angle::Degrees(0.000001));
                 isect.InitToIntersection(cptr.get(), &tria);
 #else
                 std::vector<S2Polygon*> pieces;
-                for (const auto& id : flat_cells[cidx])
+                for (unsigned int cellidx = 0; cellidx < flat_countries[cidx].size(); ++cellidx)
                 {
+                    //for (const auto& id : flat_cells[cidx]) {
+                    std::shared_ptr<S2Polygon> cptr = flat_countries[cidx][cellidx];
+                    const auto& id = flat_cells[cidx][cellidx];
+                    
                     S2Cell cell(id);
                     if(tria.MayIntersect(cell)){
                         auto piece = new S2Polygon();
