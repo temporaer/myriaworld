@@ -42,23 +42,28 @@ def generate_cpp_readable_file(filename):
 def generate_wkt(filename):
     import ogr
     # Get the driver
-    #print ogr.CreateGeometryFromWkt("POLYGON((3,3 4,4 5,2))")
     driver = ogr.GetDriverByName('ESRI Shapefile')
     # Open a shapefile
-    shapefileName = "../data/ne_10m_admin_0_countries.shp"
-    dataset = driver.Open(shapefileName, 0)
+    countries_shp = "../data/ne_10m_admin_0_countries.shp"
+    ocean_shp = "../data/ne_10m_ocean.shp"
+    country_ds = driver.Open(countries_shp, 0)
+    ocean_ds = driver.Open(ocean_shp, 0)
 
     L = []
-    layer = dataset.GetLayer()
     with open(filename, "w") as f:
-        for index in xrange(layer.GetFeatureCount()):
-            feature = layer.GetFeature(index)
-            f.write("%s;" % feature['NAME_LONG'])
-            geometry = feature.GetGeometryRef()
-            L.append(geometry.Clone())
-            #geometry for polygon as WKT, inner rings, outer rings etc. 
-            f.write(str(geometry))
-            f.write('\n')
+        for ds in [country_ds]:
+            layer = ds.GetLayer()
+            for index in xrange(layer.GetFeatureCount()):
+                feature = layer.GetFeature(index)
+                try:
+                    f.write("%s;" % feature['NAME_LONG'])
+                except:
+                    f.write("OCEAN;")
+                geometry = feature.GetGeometryRef()
+                L.append(geometry.Clone())
+                #geometry for polygon as WKT, inner rings, outer rings etc. 
+                f.write(str(geometry))
+                f.write('\n')
     return L
 
 def read_triangles(filename):

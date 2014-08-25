@@ -27,7 +27,7 @@ namespace myriaworld
             std::vector<S2Loop*> loops;
             S2PolygonBuilderOptions pbo = S2PolygonBuilderOptions::UNDIRECTED_XOR();
             S2PolygonBuilder pb(pbo);
-            BOOST_LOG_TRIVIAL(info) << c.m_name;
+            //BOOST_LOG_TRIVIAL(info) << c.m_name;
             for(const auto& poly : c.m_s2_polys){
                 std::vector<S2Point> pts;
                 for(const auto& v : poly.outer()){
@@ -44,14 +44,14 @@ namespace myriaworld
                     std::reverse(pts.begin(), pts.end());
                     loop = new S2Loop(pts);
                 }
-                BOOST_LOG_TRIVIAL(info) << "    Country Loop Area: " << loop->GetArea();
+                //BOOST_LOG_TRIVIAL(info) << "    Country Loop Area: " << loop->GetArea();
                 loops.push_back(loop);
                 //S2Loop loop(pts);
                 //pb.AddLoop(&loop);
             }
             auto cptr = std::make_shared<S2Polygon>(&loops);
             double carea = cptr->GetArea();
-            BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
+            //BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
             //auto cptr = std::make_shared<S2Polygon>();
             //pb.AssemblePolygon(cptr.get(), NULL);
 
@@ -76,8 +76,8 @@ namespace myriaworld
                 S2Polygon cellp0(cell0);
                 piece->InitToIntersection(cptr.get(), &cellp0);
                 assert(piece->GetArea() < 10);
-                BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
-                BOOST_LOG_TRIVIAL(info) << "Piece Area: " << piece->GetArea();
+                //BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
+                //BOOST_LOG_TRIVIAL(info) << "Piece Area: " << piece->GetArea();
                 if(piece->GetArea() < 0.00001)
                     continue;
                 if(piece->GetArea() > carea + 0.0000001)
@@ -89,10 +89,12 @@ namespace myriaworld
             flat_cells.push_back(flat_cell);
             n_cells += cells.size();
         }
-        BOOST_LOG_TRIVIAL(info) << "avg cells/country: "<<n_cells/(float)countries.size();
+        //BOOST_LOG_TRIVIAL(info) << "avg cells/country: "<<n_cells/(float)countries.size();
         boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
         boost::property_map<triangle_graph, country_bits_t>::type bs_map = get(country_bits_t(), g);
-        BOOST_LOG_TRIVIAL(info) << "...intersection operation...";
+        boost::property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
+        boost::property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
+        //BOOST_LOG_TRIVIAL(info) << "...intersection operation...";
         auto vs = boost::vertices(g);
         boost::progress_display show_progress(boost::num_vertices(g));
         for (auto vit = vs.first; vit != vs.second; ++vit)
@@ -118,8 +120,10 @@ namespace myriaworld
                 loops.push_back(loop);
                 tria.Init(&loops);
             }
+            double tria_area = tria.GetArea();
+            double tria_country_area = 0.;
 
-            //for(const auto& cptr : flat_countries){
+            S2Polygon allbits;
             for (unsigned int cidx = 0; cidx < flat_countries.size(); ++cidx)
             {
 #if 0
@@ -130,7 +134,6 @@ namespace myriaworld
                 std::vector<S2Polygon*> pieces;
                 for (unsigned int cellidx = 0; cellidx < flat_countries[cidx].size(); ++cellidx)
                 {
-                    //for (const auto& id : flat_cells[cidx]) {
                     std::shared_ptr<S2Polygon> cptr = flat_countries[cidx][cellidx];
                     const auto& id = flat_cells[cidx][cellidx];
                     
@@ -138,10 +141,10 @@ namespace myriaworld
                     if(tria.MayIntersect(cell)){
                         auto piece = new S2Polygon();
                         piece->InitToIntersection(cptr.get(), &tria);
-                        BOOST_LOG_TRIVIAL(info) << "---------------------";
-                        BOOST_LOG_TRIVIAL(info) << "Country     : " << cptr->GetArea();
-                        BOOST_LOG_TRIVIAL(info) << "Tria        : " << tria.GetArea();
-                        BOOST_LOG_TRIVIAL(info) << "Intersection: " << piece->GetArea();
+                        //BOOST_LOG_TRIVIAL(info) << "---------------------";
+                        //BOOST_LOG_TRIVIAL(info) << "Country     : " << cptr->GetArea();
+                        //BOOST_LOG_TRIVIAL(info) << "Tria        : " << tria.GetArea();
+                        //BOOST_LOG_TRIVIAL(info) << "Intersection: " << piece->GetArea();
                         assert(piece->GetArea() < 10);
                         assert(piece->GetArea() < cptr->GetArea() + tria.GetArea());
                         if(piece->num_loops() == 0)
@@ -158,9 +161,11 @@ namespace myriaworld
                     continue;
                 if(isect.GetArea() < 0.00001)
                     continue;
-                BOOST_LOG_TRIVIAL(info) << "Union:        " << isect.GetArea();
+                //BOOST_LOG_TRIVIAL(info) << "Union:        " << isect.GetArea();
                 assert(isect.GetArea() < 10);
                 assert(isect.GetArea() <= tria.GetArea() + 0.000001);
+                tria_country_area += isect.GetArea();
+                allbits.InitToUnion(&allbits, &isect);
                 for (int i = 0; i < n_loops; ++i)
                 {
                     myriaworld::polar2_polygon s2poly;
@@ -179,10 +184,44 @@ namespace myriaworld
                                     s2p.lng().degrees(),
                                     s2p.lat().degrees()));
                     }
+                    if(n_vert < 3) continue;
                     country_bit bit;
+                    //bg::correct(s2poly);
                     bit.m_s2_poly = s2poly;
                     bs_map[*vit].push_back(bit);
                 }
+            }
+
+            area_map[*vit] = tria_area;
+            frac_filled[*vit] = std::max(0.0, std::min(1.0, tria_country_area / (tria_area + 0.0000001)));
+
+            // everything else must be water!
+            S2Polygon waterbits;
+            waterbits.InitToDifference(&tria, &allbits);
+            country_bit waterbit;
+            for (int i = 0; i < waterbits.num_loops(); ++i)
+            {
+                myriaworld::polar2_polygon s2poly;
+                S2Loop& loop = *waterbits.loop(i);
+                if(loop.is_hole())
+                    continue;
+                //assert(!loop.is_hole());
+                int n_vert = loop.num_vertices();
+                // our polygons are not closed!
+                for (int j = 0; j < n_vert; ++j)
+                {
+                    S2Point p = loop.vertex(j);
+                    S2LatLng s2p(p);
+                    s2poly.outer().push_back(
+                            polar2_point(
+                                s2p.lng().degrees(),
+                                s2p.lat().degrees()));
+                }
+                if(n_vert < 3) continue;
+                country_bit bit;
+                //bg::correct(s2poly);
+                bit.m_s2_poly = s2poly;
+                bs_map[*vit].push_back(bit);
             }
         }
         BOOST_LOG_TRIVIAL(info) << "...done.";

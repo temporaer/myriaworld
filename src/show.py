@@ -50,19 +50,20 @@ def plot_polys_2d(fn):
     linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
     linecol.set_array(line_colors)
     #trace()
-    ax.add_collection(linecol)
+    #ax.add_collection(linecol)
 
     ##fe = FinElem("src/tbits.txt", latlng=True)
+    #fe = FinElem("triagrid_poly.txt", latlng=True)
     fe = FinElem("flattened.txt", latlng=True)
     verts = fe.polys
     colors = fe.colors
     #colors = np.random.uniform(size=len(verts))
-    #ax.add_collection(matplotlib.collections.PolyCollection(verts,
-        #array=colors, edgecolor=None, lw=0, alpha=.3, cmap="jet"))
+    ax.add_collection(matplotlib.collections.PolyCollection(verts,
+        array=colors, edgecolor="black", lw=1, alpha=.3, cmap="jet"))
 
     ax.set_xlim(-5, 2)
     ax.set_ylim(-1, 7)
-    if True:
+    if False:
         lines = lines.reshape(-1, 4)
         ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
         ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))

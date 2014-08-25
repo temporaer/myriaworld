@@ -279,7 +279,8 @@ namespace myriaworld
         property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
         property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
 
-        {   // determine areas
+        if(0){   // determine areas
+            // done in country2tria_s2.cpp
             auto vs = vertices(g);
             for(auto vit = vs.first; vit!=vs.second; vit++){
                 auto p = pos_map[*vit].m_s2_poly;
@@ -297,15 +298,26 @@ namespace myriaworld
             }
         }
 
+        // all triangles /should/ have about the same size.
+        {
+            auto vs = vertices(g);
+            double s = 0.;
+            for(auto vit = vs.first; vit!=vs.second; vit++){
+                s += area_map[*vit];
+            }
+            for(auto vit = vs.first; vit!=vs.second; vit++){
+                area_map[*vit] = std::max(0.0, std::min(area_map[*vit], 2.*s/std::distance(vs.first, vs.second)));
+            }
+        }
         {
             // 2. smooth triangle filled-counters
             auto vs = vertices(g);
-            for(unsigned int iter=0; iter<50; iter++){
+            for(unsigned int iter=0; iter<100; iter++){
                 std::vector<double> frac_filled2(boost::num_vertices(g));
                 for(auto vit = vs.first; vit!=vs.second; vit++){
                     auto es          = boost::out_edges(*vit, g);
                     double sum       = 0.0;
-                    double weightsum = 0.0;
+                    double weightsum = 0.000001;
                     for(auto eit = es.first; eit != es.second; eit++){
                         const auto sourcev = source(*eit, g);
                         const auto targetv = target(*eit, g);
@@ -333,7 +345,7 @@ namespace myriaworld
                 double sum = 
                     frac_filled[vertex_index_map[sourcev]] * area_map[sourcev] +
                     frac_filled[vertex_index_map[targetv]] * area_map[targetv];
-                double weightsum = 
+                double weightsum = 0.000001 +
                     area_map[sourcev] +
                     area_map[targetv];
 
