@@ -32,8 +32,8 @@ namespace myriaworld
                 std::vector<S2Point> pts;
                 for(const auto& v : poly.outer()){
                     S2LatLng s2p(S2LatLng::FromDegrees(
-                                v.get<0>(),
-                                v.get<1>()));
+                                v.get<1>(),
+                                v.get<0>()));
                     s2p = s2p.Normalized();
                     pts.push_back(s2p.ToPoint());
                 }

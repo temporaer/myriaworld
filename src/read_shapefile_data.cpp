@@ -50,8 +50,8 @@ namespace myriaworld
                 c.m_s2_polys.push_back(poly2);
             }
             ret.push_back(c);
-            if(cnt++ > 10) // TODO remove
-                break;
+            //if(cnt++ > 10) // TODO remove
+                //break;
         }
         return ret;
     }
