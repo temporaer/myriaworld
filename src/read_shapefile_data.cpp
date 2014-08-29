@@ -309,10 +309,35 @@ namespace myriaworld
                 area_map[*vit] = std::max(0.0, std::min(area_map[*vit], 2.*s/std::distance(vs.first, vs.second)));
             }
         }
-        {
-            // 2. smooth triangle filled-counters
+
+        // 2. smooth triangle filled-counters
+        if(true){
+            // this is a true convolution with a gaussian kernel
+            // even for small kernels, this will have effects on 
+            // far off-shore areas, but it is more expensive than the version
+            // below.
             auto vs = vertices(g);
-            for(unsigned int iter=0; iter<100; iter++){
+            std::vector<double> frac_filled2(boost::num_vertices(g));
+            for(auto vit = vs.first; vit!=vs.second; vit++){
+                double sum = 0., weightsum = 0.;
+                for(auto vit2 = vs.first; vit2!=vs.second; vit2++){
+                    const auto& p0 = pos_map[*vit].m_s2_poly.outer()[0];
+                    const auto& p1 = pos_map[*vit2].m_s2_poly.outer()[0];
+                    double dist = geo::haversine_distance(p0, p1);
+                    double weight = exp(-10*dist*dist);
+                    sum += weight * frac_filled[*vit2];
+                    weightsum += weight;
+                }
+
+                frac_filled2[std::distance(vs.first, vit)] = sum / weightsum;
+            }
+            for(unsigned int i=0; i < boost::num_vertices(g); i++)
+                frac_filled[i] = frac_filled2[i];
+        }
+        else{
+            // poor man's convolution by repeated averaging of neighboring areas
+            auto vs = vertices(g);
+            for(unsigned int iter=0; iter<80; iter++){
                 std::vector<double> frac_filled2(boost::num_vertices(g));
                 for(auto vit = vs.first; vit!=vs.second; vit++){
                     auto es          = boost::out_edges(*vit, g);
@@ -322,11 +347,11 @@ namespace myriaworld
                         const auto sourcev = source(*eit, g);
                         const auto targetv = target(*eit, g);
                         sum += 
-                            frac_filled[sourcev] * area_map[sourcev] +
-                            frac_filled[targetv] * area_map[targetv];
-                        weightsum += 
-                            area_map[sourcev] +
-                            area_map[targetv];
+                            frac_filled[sourcev] /** area_map[sourcev]*/ +
+                            frac_filled[targetv] /** area_map[targetv]*/;
+                        weightsum += 2;
+                            //area_map[sourcev] +
+                            //area_map[targetv];
                     }
                     frac_filled2[std::distance(vs.first, vit)] =
                         sum / weightsum;
@@ -336,6 +361,12 @@ namespace myriaworld
             }
         }
 
+        auto W0 = [&](double v, double v0=0., double Wv=1){
+            return Wv * fabs(v - v0)/90.;
+        };
+        auto W1 = [&](double v, double v0=0., double Wv=1){
+            return Wv * fabs(v - v0)/180.;
+        };
         {
             // 3. set the edge weights.
             auto es = edges(g);
@@ -343,14 +374,19 @@ namespace myriaworld
                 const auto sourcev = source(*eit, g);
                 const auto targetv = target(*eit, g);
                 double sum = 
-                    frac_filled[vertex_index_map[sourcev]] * area_map[sourcev] +
-                    frac_filled[vertex_index_map[targetv]] * area_map[targetv];
-                double weightsum = 0.000001 +
-                    area_map[sourcev] +
-                    area_map[targetv];
+                    frac_filled[vertex_index_map[sourcev]] /** area_map[sourcev]*/ +
+                    frac_filled[vertex_index_map[targetv]] /** area_map[targetv]*/;
+                double weightsum = 2.;
+                    //0.000001 +
+                    //area_map[sourcev] +
+                    //area_map[targetv];
 
                 sum /= weightsum; 
-                sum = exp(-sum);
+
+                const auto& p = pos_map[sourcev].m_s2_poly;
+                sum = (1 - sum) *
+                    ( W0(p.outer()[0].get<0>(), 53., 1.)
+                    + W1(p.outer()[0].get<1>(), 14., 10.));
                 //sum = 1. - (sum-0.1)*(sum-0.1);
                 weightmap[*eit] = sum;
             }

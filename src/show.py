@@ -59,10 +59,10 @@ def plot_polys_2d(fn):
     colors = fe.colors
     #colors = np.random.uniform(size=len(verts))
     ax.add_collection(matplotlib.collections.PolyCollection(verts,
-        array=colors, edgecolor="black", lw=1, alpha=.3, cmap="jet"))
+        array=colors, edgecolor="#dddddd", lw=0, alpha=.9, cmap="jet"))
 
-    ax.set_xlim(-5, 2)
-    ax.set_ylim(-1, 7)
+    ax.set_xlim(-4, 4)
+    ax.set_ylim(-4, 4)
     if False:
         lines = lines.reshape(-1, 4)
         ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
