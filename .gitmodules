@@ -1,0 +1,3 @@
+[submodule "src/cached_function"]
+	path = src/cached_function
+	url = https://github.com/temporaer/cached_function.git

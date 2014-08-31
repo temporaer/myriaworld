@@ -185,7 +185,7 @@ namespace myriaworld
                                     s2p.lat().degrees()));
                     }
                     if(n_vert < 3) continue;
-                    country_bit bit;
+                    country_bit bit(countries[cidx]); // copies color infos
                     //bg::correct(s2poly);
                     bit.m_s2_poly = s2poly;
                     bs_map[*vit].push_back(bit);
@@ -198,7 +198,6 @@ namespace myriaworld
             // everything else must be water!
             S2Polygon waterbits;
             waterbits.InitToDifference(&tria, &allbits);
-            country_bit waterbit;
             for (int i = 0; i < waterbits.num_loops(); ++i)
             {
                 myriaworld::polar2_polygon s2poly;
@@ -219,6 +218,8 @@ namespace myriaworld
                 }
                 if(n_vert < 3) continue;
                 country_bit bit;
+                bit.m_scalerank = 0;
+                bit.m_mapcolor = -1;
                 //bg::correct(s2poly);
                 bit.m_s2_poly = s2poly;
                 bs_map[*vit].push_back(bit);

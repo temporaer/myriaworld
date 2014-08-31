@@ -41,10 +41,12 @@ namespace myriaworld{
 
     struct country{
         std::string m_name;          // the name of this country
+        double m_mapcolor;
+        double m_scalerank;
         polar2_multipolygon m_s2_polys;  // all polygons which constitute the country
         template<class Archive>
         void serialize(Archive& ar, const unsigned long ){
-            ar & m_name & m_s2_polys;
+            ar & m_name & m_mapcolor & m_scalerank & m_s2_polys;
         }
     };
 
@@ -61,14 +63,20 @@ namespace myriaworld{
     struct country_bit{
         boost::shared_ptr<country> m_country;
         cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
+        double m_mapcolor;
+        double m_scalerank;
         cart3_polygon m_mappos;   // coordinate on map
         polar2_polygon m_s2_poly;  // as read from shapefile
-        country_bit(){}
         country_bit(const polar2_polygon& sp):m_s2_poly(sp){}
         template<class Archive>
         void serialize(Archive& ar, const unsigned long ){
-            ar & m_c3_poly & m_mappos & m_s2_poly;
+            ar & m_c3_poly & m_mappos & m_s2_poly & m_mappos & m_scalerank;
         }
+        country_bit(){}
+        country_bit(const country& c)
+            : m_mapcolor(c.m_mapcolor),
+              m_scalerank(c.m_scalerank)
+        {}
     };
 
     struct shared_edge_property{

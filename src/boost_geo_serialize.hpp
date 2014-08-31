@@ -19,6 +19,7 @@ namespace boost
         using myriaworld::polar2_polygon;
         using myriaworld::cart2_polygon;
         using myriaworld::cart3_polygon;
+        using myriaworld::polar2_multipolygon;
 
         template <class Archive>
             void save(Archive &ar, const myriaworld::polar2_point &pos, const
@@ -61,6 +62,11 @@ namespace boost
                 {
                         ar & t.outer();
                         ar & t.inners();
+                }
+                template<class Archive>
+                inline void serialize(Archive & ar, polar2_multipolygon &t, const unsigned int )
+                {
+                    ar & *(std::vector<polar2_polygon>*)&t;
                 }
                 template<class Archive>
                 inline void serialize(Archive & ar, cart2_polygon &t, const unsigned int )

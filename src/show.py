@@ -40,8 +40,7 @@ class FinElem:
         self.polys = L
 
 def plot_polys_2d(fn):
-    fig = plt.figure(figsize=(15, 15))
-    ax = fig.add_subplot(111)
+    fig, ax = plt.subplots(1, 1, figsize=(9, 16))
 
     #lines = np.loadtxt("src/dual_graph.txt").reshape(-1, 5)
     lines = np.loadtxt(fn).reshape(-1, 5)
@@ -57,19 +56,25 @@ def plot_polys_2d(fn):
     fe = FinElem("flattened.txt", latlng=True)
     verts = fe.polys
     colors = fe.colors
+    def peter(c):
+        if c < 0: return 0
+        else:     return 1
+    colors = map(peter, colors)
+    colors = np.array(colors)
     #colors = np.random.uniform(size=len(verts))
     ax.add_collection(matplotlib.collections.PolyCollection(verts,
-        array=colors, edgecolor="#dddddd", lw=0, alpha=.9, cmap="jet"))
+        array=colors, edgecolor=None, lw=0, alpha=.9, cmap="binary"))
 
     ax.set_xlim(-4, 4)
-    ax.set_ylim(-4, 4)
+    ax.set_ylim(-3, 1.5)
+    ax.set_axis_bgcolor('#090909')
     if False:
         lines = lines.reshape(-1, 4)
         ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
         ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
     #ax.xaxis.set_major_locator(plt.NullLocator())
     #ax.yaxis.set_major_locator(plt.NullLocator())
-    #ax.set_aspect('equal')
+    ax.set_aspect('equal')
     plt.tight_layout()
     plt.show()
 

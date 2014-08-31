@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <boost/graph/breadth_first_search.hpp>
 #include <boost/geometry/strategies/transform.hpp>
 #include <boost/geometry/index/rtree.hpp>
 #include <boost/log/trivial.hpp>
@@ -12,26 +13,58 @@
 
 namespace bg = boost::geometry;
 
+namespace myriaworld{
+    namespace detail{
+        struct max_depth_reached{};
+        class gauss_accu : public boost::default_bfs_visitor
+        {
+            public:
+                gauss_accu(polar2_point p):m_cpos(p){}
+                polar2_point m_cpos;
+                double m_weightsum, m_sum;
+                template < typename Vertex, typename Graph >
+                    void discover_vertex(Vertex u, const Graph & g)
+                    {
+                        boost::property_map<triangle_graph, vertex_pos_t>::const_type pos_map 
+                            = get(vertex_pos_t(), g);
+                        boost::property_map<triangle_graph, vertex_fracfilled_t>::const_type
+                            frac_filled = get(vertex_fracfilled_t(), g);
+                        const auto& p0 = pos_map[u].m_s2_poly.outer()[0];
+                        const auto& p1 = m_cpos;
+                        double dist = geo::haversine_distance(p0, p1);
+                        if(dist > M_PI/4.)
+                            throw max_depth_reached();
+                        double weight = exp(-10*dist*dist);
+                        m_sum += weight * frac_filled[u];
+                        m_weightsum += weight;
+                    }
+        };
+    }
+}
+
+
 namespace myriaworld
 {
     std::vector<country> read_countries(const std::string& filename){
         std::ifstream ifs(filename.c_str());
         std::vector<country> ret;
-        unsigned int cnt=0;
+        //unsigned int cnt=0;
         while(ifs){
             std::string line;
             std::vector<std::string> v;
             std::getline(ifs, line);
             boost::split(v, line, boost::is_any_of(";"));
-            if(v.size() != 2)
+            if(v.size() != 4)
                 break;
 
             country c;
             c.m_name = v[0];
+            c.m_mapcolor = boost::lexical_cast<double>(v[1]);
+            c.m_scalerank = boost::lexical_cast<double>(v[2]);
 
             BOOST_LOG_TRIVIAL(debug) << "Reading " << c.m_name;
-            if(v[1].find("MULTIPOLY") != std::string::npos){
-                bg::read_wkt(v[1], c.m_s2_polys);
+            if(v[3].find("MULTIPOLY") != std::string::npos){
+                bg::read_wkt(v[3], c.m_s2_polys);
                 for(auto & p : c.m_s2_polys){
                     // wkt is closed, we want non-closed entries
                     p.outer().pop_back();
@@ -40,7 +73,7 @@ namespace myriaworld
                 }
             }else{
                 polar2_polygon poly2;
-                bg::read_wkt(v[1], poly2);
+                bg::read_wkt(v[3], poly2);
 
                 // wkt is closed, we want non-closed entries
                 poly2.outer().pop_back();
@@ -319,20 +352,13 @@ namespace myriaworld
             auto vs = vertices(g);
             std::vector<double> frac_filled2(boost::num_vertices(g));
             for(auto vit = vs.first; vit!=vs.second; vit++){
-                double sum = 0., weightsum = 0.;
-                for(auto vit2 = vs.first; vit2!=vs.second; vit2++){
-                    const auto& p0 = pos_map[*vit].m_s2_poly.outer()[0];
-                    const auto& p1 = pos_map[*vit2].m_s2_poly.outer()[0];
-                    double dist = geo::haversine_distance(p0, p1);
-                    double weight = exp(-10*dist*dist);
-                    sum += weight * frac_filled[*vit2];
-                    weightsum += weight;
+                detail::gauss_accu acc(pos_map[*vit].m_s2_poly.outer()[0]);
+                try{
+                    breadth_first_search(g, *vit, visitor(acc));
+                }catch(detail::max_depth_reached){
+                    frac_filled[*vit] = acc.m_sum / (acc.m_weightsum + 0.000001);
                 }
-
-                frac_filled2[std::distance(vs.first, vit)] = sum / weightsum;
             }
-            for(unsigned int i=0; i < boost::num_vertices(g); i++)
-                frac_filled[i] = frac_filled2[i];
         }
         else{
             // poor man's convolution by repeated averaging of neighboring areas
@@ -361,10 +387,10 @@ namespace myriaworld
             }
         }
 
-        auto W0 = [&](double v, double v0=0., double Wv=1){
+        auto W0 = [&](double v, double v0, double Wv){
             return Wv * fabs(v - v0)/90.;
         };
-        auto W1 = [&](double v, double v0=0., double Wv=1){
+        auto W1 = [&](double v, double v0, double Wv){
             return Wv * fabs(v - v0)/180.;
         };
         {

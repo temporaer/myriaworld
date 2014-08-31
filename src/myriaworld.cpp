@@ -7,8 +7,11 @@
 #include <boost/graph/adj_list_serialize.hpp>
 #include <boost/serialization/vector.hpp>
 //#include <boost/geometry/index/detail/serialization.hpp>
+#include <boost/serialization/vector.hpp>
 #include "boost_geo_serialize.hpp"
-#include "cached_function.hpp"
+
+#include "hash_functions.hpp"
+#include "cached_function/memoization.hpp"
 
 void write_flattened(
         const std::string& filename,
@@ -23,9 +26,9 @@ void write_flattened(
     using boost::edge_weight_t;
     using boost::edge_weight;
 
-    boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
-    boost::property_map<triangle_graph, edge_weight_t>::type weight_map = get(edge_weight, g);
-    boost::property_map<triangle_graph, shared_edge_t>::type se_map = get(shared_edge_t(), g);
+    //boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+    //boost::property_map<triangle_graph, edge_weight_t>::type weight_map = get(edge_weight, g);
+    //boost::property_map<triangle_graph, shared_edge_t>::type se_map = get(shared_edge_t(), g);
     boost::property_map<triangle_graph, country_bits_t>::type bs_map = get(country_bits_t(), g);
     boost::property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
 
@@ -36,6 +39,7 @@ void write_flattened(
         auto& tbits = bs_map[*vit];
         double color = frac_filled[*vit];
         for(const auto& bit : tbits){
+            color = bit.m_mapcolor;
             auto& poly = bit.m_mappos;
             if(poly.outer().size() < 2)
                 continue;
@@ -80,12 +84,12 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
             << " "          << b.get<0>() << " " << b.get<1>() << std::endl;
         return true;
     };
-    auto optional_print_c2 = [&](double color, const cart3_point& a, const cart3_point& b){
+    //auto optional_print_c2 = [&](double color, const cart3_point& a, const cart3_point& b){
         //if(a.get<2>() < 0) return;
         //if(b.get<2>() < 0) return;
-        ofs << color << " " << a.get<0>() << " " << a.get<1>()
-            << " "          << b.get<0>() << " " << b.get<1>() << std::endl;
-    };
+        //ofs << color << " " << a.get<0>() << " " << a.get<1>()
+            //<< " "          << b.get<0>() << " " << b.get<1>() << std::endl;
+    //};
 
     if(0)
     for(auto vit = vs.first; vit != vs.second; vit++){
@@ -128,8 +132,8 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
     if(1)
     for(auto eit = es.first; eit != es.second; eit++){
         auto sourcev = boost::source(*eit, g);
-        auto targetv = boost::target(*eit, g);
-        auto se = myriaworld::geo::determine_shared_vertices(pos_map[sourcev].m_s2_poly, pos_map[targetv].m_s2_poly);
+        //auto targetv = boost::target(*eit, g);
+        //auto se = myriaworld::geo::determine_shared_vertices(pos_map[sourcev].m_s2_poly, pos_map[targetv].m_s2_poly);
         auto s = centroids[boost::source(*eit, g)];
         auto t = centroids[boost::target(*eit, g)];
         auto p = pos_map[sourcev];
@@ -143,10 +147,11 @@ void write_s2centroids(std::string filename, myriaworld::triangle_graph& g){
         //auto t = p.m_s2_poly.outer()[se.shared_l1];
         //auto s = p.m_mappos.outer()[se.shared_l0];
         //auto t = p.m_mappos.outer()[se.shared_l1];
-        if(!se_map[*eit].is_cut)
+        if(!se_map[*eit].is_cut){
             optional_print_s2(weight_map[*eit], s, t);
-        else
+        } else{
             ;//optional_print_s2(weight_map[*eit], s, t);
+        }
     }
 }
 
@@ -163,17 +168,26 @@ myriaworld::triangle_graph side_effect_wrap(
     func(g, c);
     return g;
 }
+myriaworld::triangle_graph side_effect_wrap2(
+        std::function<void(myriaworld::triangle_graph&)> func,
+        myriaworld::triangle_graph& g){
+    func(g);
+    return g;
+}
 
 
 int main(){
     using namespace myriaworld;
-    auto countries = read_countries("easy2.txt");
-    auto g = get_triangle_graph(5);
-    fscache::function_cache c;
-    g = c("country2tria", 0, side_effect_wrap, country2tria_s2, g, countries);
-    //country2tria_s2(g, countries);
-    determine_edge_weights(g);
-    determine_cuttings(g);
+    using namespace memoization;
+
+    disk c("cache");
+    auto g = get_triangle_graph(6);
+
+    using std::string;
+    auto countries = c(string("read_countries"), read_countries, string("easy2.txt"));
+    g = c(string("country2tria"), side_effect_wrap, country2tria_s2, g, countries);
+    g = c(string("determine_edge_weights"), side_effect_wrap2, determine_edge_weights, g);
+    g = c(string("determine_cuttings"), side_effect_wrap2, determine_cuttings, g);
     flatten(g, 1.);
     write_s2centroids("triagrid.txt", g);
     write_flattened("flattened.txt", g);
