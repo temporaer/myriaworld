@@ -10,7 +10,7 @@ namespace myriaworld
     std::vector<polar2_polygon> read_triangle_grid(const std::string& filename);
     myriaworld::triangle_graph get_triangle_graph(int maxlevel);
 
-    void determine_edge_weights(myriaworld::triangle_graph& g);
+    myriaworld::triangle_graph determine_edge_weights(myriaworld::triangle_graph& g, double sigma, double wlat, double wlon);
 
 }
 #endif /* __READ_SHAPEFILE_DATA_HPP__ */

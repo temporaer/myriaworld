@@ -19,11 +19,12 @@ namespace myriaworld{
         class gauss_accu : public boost::default_bfs_visitor
         {
             public:
-                gauss_accu(polar2_point p):m_cpos(p){}
+                gauss_accu(polar2_point p, double* sum, double* wsum, double sigma):m_cpos(p),m_weightsum(wsum),m_sum(sum),m_sigma(sigma){}
                 polar2_point m_cpos;
-                double m_weightsum, m_sum;
+                double *m_weightsum, *m_sum;
+                double m_sigma;
                 template < typename Vertex, typename Graph >
-                    void discover_vertex(Vertex u, const Graph & g)
+                    void examine_vertex(Vertex u, const Graph & g)
                     {
                         boost::property_map<triangle_graph, vertex_pos_t>::const_type pos_map 
                             = get(vertex_pos_t(), g);
@@ -32,11 +33,13 @@ namespace myriaworld{
                         const auto& p0 = pos_map[u].m_s2_poly.outer()[0];
                         const auto& p1 = m_cpos;
                         double dist = geo::haversine_distance(p0, p1);
-                        if(dist > M_PI/4.)
+                        //BOOST_LOG_TRIVIAL(debug) << "     dist: " << dist;
+                        if(dist > M_PI/4)
                             throw max_depth_reached();
-                        double weight = exp(-10*dist*dist);
-                        m_sum += weight * frac_filled[u];
-                        m_weightsum += weight;
+                        double weight = exp(-dist*dist / (m_sigma * m_sigma));
+                        //BOOST_LOG_TRIVIAL(debug) << "        w: " << weight;
+                        *m_sum += weight * frac_filled[u];
+                        *m_weightsum += weight;
                     }
         };
     }
@@ -293,7 +296,8 @@ namespace myriaworld
             return tg;
         }
 
-    void determine_edge_weights(myriaworld::triangle_graph& g){
+    myriaworld::triangle_graph
+        determine_edge_weights(myriaworld::triangle_graph& g, double sigma, double wlat, double wlon){
         using namespace myriaworld;
         namespace bg = boost::geometry;
         using boost::vertex_index_t;
@@ -352,13 +356,19 @@ namespace myriaworld
             auto vs = vertices(g);
             std::vector<double> frac_filled2(boost::num_vertices(g));
             for(auto vit = vs.first; vit!=vs.second; vit++){
-                detail::gauss_accu acc(pos_map[*vit].m_s2_poly.outer()[0]);
+                //BOOST_LOG_TRIVIAL(debug) << "FF before: " << frac_filled[*vit];
+                double sum=0, wsum=0;
+                detail::gauss_accu acc(pos_map[*vit].m_s2_poly.outer()[0], &sum, &wsum, sigma);
                 try{
                     breadth_first_search(g, *vit, visitor(acc));
                 }catch(detail::max_depth_reached){
-                    frac_filled[*vit] = acc.m_sum / (acc.m_weightsum + 0.000001);
+                    ;
                 }
+                frac_filled2[*vit] = sum / (wsum + 0.000001);
+                //BOOST_LOG_TRIVIAL(debug) << "FF after : " << frac_filled2[*vit];
             }
+            for(unsigned int i=0; i < boost::num_vertices(g); i++)
+                frac_filled[i] = frac_filled2[i];
         }
         else{
             // poor man's convolution by repeated averaging of neighboring areas
@@ -367,17 +377,12 @@ namespace myriaworld
                 std::vector<double> frac_filled2(boost::num_vertices(g));
                 for(auto vit = vs.first; vit!=vs.second; vit++){
                     auto es          = boost::out_edges(*vit, g);
-                    double sum       = 0.0;
-                    double weightsum = 0.000001;
+                    double sum       = frac_filled[*vit];
+                    double weightsum = 1.;
                     for(auto eit = es.first; eit != es.second; eit++){
-                        const auto sourcev = source(*eit, g);
                         const auto targetv = target(*eit, g);
-                        sum += 
-                            frac_filled[sourcev] /** area_map[sourcev]*/ +
-                            frac_filled[targetv] /** area_map[targetv]*/;
-                        weightsum += 2;
-                            //area_map[sourcev] +
-                            //area_map[targetv];
+                        sum += frac_filled[targetv] ;
+                        weightsum += 1;
                     }
                     frac_filled2[std::distance(vs.first, vit)] =
                         sum / weightsum;
@@ -410,13 +415,16 @@ namespace myriaworld
                 sum /= weightsum; 
 
                 const auto& p = pos_map[sourcev].m_s2_poly;
-                sum = (1 - sum) *
-                    ( W0(p.outer()[0].get<0>(), 53., 1.)
-                    + W1(p.outer()[0].get<1>(), 14., 10.));
+                sum = (1 - sum) 
+                    //;
+                *
+                    ( W0(p.outer()[0].get<0>(), 0., wlat)
+                    + W1(p.outer()[0].get<1>(), 0., wlon));
                 //sum = 1. - (sum-0.1)*(sum-0.1);
                 weightmap[*eit] = sum;
             }
         }
 
+        return g;
     }
 }

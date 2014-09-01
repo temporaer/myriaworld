@@ -45,7 +45,7 @@ country2tria_s2.o: country2tria_s2.cpp myriaworld.h.gch
 cutting.o: cutting.cpp myriaworld.h.gch
 	$(CXX) $(CXXFLAGS) -c cutting.cpp -o $@
 
-myriaworld.o: myriaworld.cpp myriaworld.h.gch
+myriaworld.o: myriaworld.cpp myriaworld.h.gch hash_functions.hpp
 	$(CXX) $(CXXFLAGS) -c myriaworld.cpp -o $@
 
 SPHEmesh: SPHEmesh_main.cpp SPHEmesh.cpp SPHEmesh.hpp

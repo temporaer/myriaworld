@@ -70,7 +70,7 @@ namespace myriaworld{
         country_bit(const polar2_polygon& sp):m_s2_poly(sp){}
         template<class Archive>
         void serialize(Archive& ar, const unsigned long ){
-            ar & m_c3_poly & m_mappos & m_s2_poly & m_mappos & m_scalerank;
+            ar & m_c3_poly & m_mappos & m_s2_poly & m_mappos & m_scalerank & m_mapcolor & m_scalerank;
         }
         country_bit(){}
         country_bit(const country& c)

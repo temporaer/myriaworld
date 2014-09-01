@@ -4,11 +4,14 @@
 #include "myriaworld.h"
 namespace myriaworld{
     const triangle_graph* g_tg;
-    //std::size_t hash_value(const triaedge_descriptor& e){
-        //std::size_t seed=0;
-        //// shouldn't matter as long as vertices differ
-        //return seed;
-    //}
+    std::size_t hash_value(const 
+            boost::graph_traits<triangle_graph>::edge_iterator::value_type&
+            e){
+        std::size_t seed=0;
+        boost::property_map<triangle_graph, boost::edge_weight_t>::const_type weightmap = boost::get(boost::edge_weight, *g_tg);
+        boost::hash_combine(seed, weightmap[e]);
+        return seed;
+    }
     std::size_t hash_value(const country_bit& c){
         std::size_t seed=0;
         boost::hash_combine(seed, c.m_scalerank);
@@ -39,12 +42,13 @@ namespace myriaworld{
     std::size_t hash_value(const triangle_graph& g){
         std::size_t seed = 0;
         auto vs = vertices(g);
-        //auto es = edges(g);
+        auto es = edges(g);
         g_tg = &g;
+        boost::property_map<triangle_graph, boost::edge_weight_t>::const_type weightmap = boost::get(boost::edge_weight, *g_tg);
         boost::hash_combine(seed,
                 boost::hash_range(vs.first, vs.second));
-        //boost::hash_combine(seed,
-                //boost::hash_range(es.first, es.second));
+        for(; es.first != es.second; es.first++)
+            boost::hash_combine(seed, weightmap[*es.first]);
         return seed;
     }
     std::size_t hash_value(
