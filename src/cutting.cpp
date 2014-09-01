@@ -1,10 +1,11 @@
 #include "cutting.hpp"
 #include "geo.hpp"
+#include <boost/log/trivial.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 
 namespace myriaworld
 {
-    void determine_cuttings(triangle_graph& g){
+    triangle_graph determine_cuttings(triangle_graph& g){
         std::vector < boost::graph_traits<triangle_graph>::vertex_descriptor >
             p(boost::num_vertices(g));
         boost::property_map<triangle_graph, vertex_pos_t>::type pos_map 
@@ -13,6 +14,7 @@ namespace myriaworld
             = get(parent_t(), g);
         boost::property_map<triangle_graph, shared_edge_t>::type se_map 
             = get(shared_edge_t(), g);
+
         // 4a. find a vertex at the "back" of the globe (somewhere around samoa ^^)
         triavertex_descriptor max_vertex;
         {
@@ -44,6 +46,7 @@ namespace myriaworld
             }
             se_map[*eit].is_cut = !is_part_of_mst;
         }
+        return g;
     }
 
     /// return same triangle, but in the xy plane.

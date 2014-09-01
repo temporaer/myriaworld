@@ -59,7 +59,7 @@ def plot_polys_2d(fn):
     def peter(c):
         if c < 0: return 0
         else:     return 1
-    colors = map(peter, colors)
+    #colors = map(peter, colors)
     colors = np.array(colors)
     #colors = np.random.uniform(size=len(verts))
     ax.add_collection(matplotlib.collections.PolyCollection(verts,
@@ -67,7 +67,7 @@ def plot_polys_2d(fn):
 
     ax.set_xlim(-4, 4)
     ax.set_ylim(-3, 1.5)
-    ax.set_axis_bgcolor('#090909')
+    ax.set_axis_bgcolor('#909090')
     if False:
         lines = lines.reshape(-1, 4)
         ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))

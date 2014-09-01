@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <limits>
+#include <boost/progress.hpp>
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/geometry/strategies/transform.hpp>
 #include <boost/geometry/index/rtree.hpp>
@@ -19,10 +20,12 @@ namespace myriaworld{
         class gauss_accu : public boost::default_bfs_visitor
         {
             public:
-                gauss_accu(polar2_point p, double* sum, double* wsum, double sigma):m_cpos(p),m_weightsum(wsum),m_sum(sum),m_sigma(sigma){}
+                gauss_accu(polar2_point p, double* sum, double* wsum, double* maxd, int* n_nodes, double sigma):m_cpos(p),m_weightsum(wsum),m_sum(sum),m_sigma(sigma),m_maxd(maxd),m_n_nodes(n_nodes){}
                 polar2_point m_cpos;
                 double *m_weightsum, *m_sum;
                 double m_sigma;
+                double* m_maxd;
+                int* m_n_nodes;
                 template < typename Vertex, typename Graph >
                     void examine_vertex(Vertex u, const Graph & g)
                     {
@@ -33,10 +36,13 @@ namespace myriaworld{
                         const auto& p0 = pos_map[u].m_s2_poly.outer()[0];
                         const auto& p1 = m_cpos;
                         double dist = geo::haversine_distance(p0, p1);
-                        //BOOST_LOG_TRIVIAL(debug) << "     dist: " << dist;
-                        if(dist > M_PI/4)
+                        if(dist > M_PI/2.)
                             throw max_depth_reached();
+                        (*m_n_nodes) ++;
                         double weight = exp(-dist*dist / (m_sigma * m_sigma));
+                        if(weight < 1e-3)
+                            throw max_depth_reached();
+                        *m_maxd = std::min(weight, *m_maxd);
                         //BOOST_LOG_TRIVIAL(debug) << "        w: " << weight;
                         *m_sum += weight * frac_filled[u];
                         *m_weightsum += weight;
@@ -297,134 +303,128 @@ namespace myriaworld
         }
 
     myriaworld::triangle_graph
-        determine_edge_weights(myriaworld::triangle_graph& g, double sigma, double wlat, double wlon){
-        using namespace myriaworld;
-        namespace bg = boost::geometry;
-        using boost::vertex_index_t;
-        using boost::vertex_index;
-        using boost::edge_weight_t;
-        using boost::edge_weight;
-        using boost::property_map;
-        using boost::vertices;
-        using boost::edges;
+        smooth_landmass(myriaworld::triangle_graph& g, double sigma){
+            using namespace myriaworld;
+            namespace bg = boost::geometry;
+            using boost::vertex_index_t;
+            using boost::vertex_index;
+            using boost::edge_weight_t;
+            using boost::edge_weight;
+            using boost::property_map;
+            using boost::vertices;
+            using boost::edges;
 
 
-        property_map<triangle_graph, vertex_index_t>::type vertex_index_map = get(vertex_index, g);
-        property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
-        property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
-        property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
-        property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
-        property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
+            //property_map<triangle_graph, vertex_index_t>::type vertex_index_map = get(vertex_index, g);
+            property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+            property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
+            property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
+            property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
+            property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
 
-        if(0){   // determine areas
-            // done in country2tria_s2.cpp
-            auto vs = vertices(g);
-            for(auto vit = vs.first; vit!=vs.second; vit++){
-                auto p = pos_map[*vit].m_s2_poly;
-                //bg::correct(p);
-                area_map[*vit] = bg::area(p);
-
-                double sum = 0.0;
-                for(const auto& p_ : bits_map[*vit]){
-                    auto p = p_.m_s2_poly;
+            if(0){   // determine areas
+                // done in country2tria_s2.cpp
+                auto vs = vertices(g);
+                for(auto vit = vs.first; vit!=vs.second; vit++){
+                    auto p = pos_map[*vit].m_s2_poly;
                     //bg::correct(p);
-                    sum += bg::area(p);
-                }
-                sum /= area_map[*vit];
-                frac_filled[*vit] = std::max(0.0, std::min(1.0, sum));
-            }
-        }
+                    area_map[*vit] = bg::area(p);
 
-        // all triangles /should/ have about the same size.
-        {
-            auto vs = vertices(g);
-            double s = 0.;
-            for(auto vit = vs.first; vit!=vs.second; vit++){
-                s += area_map[*vit];
-            }
-            for(auto vit = vs.first; vit!=vs.second; vit++){
-                area_map[*vit] = std::max(0.0, std::min(area_map[*vit], 2.*s/std::distance(vs.first, vs.second)));
-            }
-        }
-
-        // 2. smooth triangle filled-counters
-        if(true){
-            // this is a true convolution with a gaussian kernel
-            // even for small kernels, this will have effects on 
-            // far off-shore areas, but it is more expensive than the version
-            // below.
-            auto vs = vertices(g);
-            std::vector<double> frac_filled2(boost::num_vertices(g));
-            for(auto vit = vs.first; vit!=vs.second; vit++){
-                //BOOST_LOG_TRIVIAL(debug) << "FF before: " << frac_filled[*vit];
-                double sum=0, wsum=0;
-                detail::gauss_accu acc(pos_map[*vit].m_s2_poly.outer()[0], &sum, &wsum, sigma);
-                try{
-                    breadth_first_search(g, *vit, visitor(acc));
-                }catch(detail::max_depth_reached){
-                    ;
+                    double sum = 0.0;
+                    for(const auto& p_ : bits_map[*vit]){
+                        auto p = p_.m_s2_poly;
+                        //bg::correct(p);
+                        sum += bg::area(p);
+                    }
+                    sum /= area_map[*vit];
+                    frac_filled[*vit] = std::max(0.0, std::min(1.0, sum));
                 }
-                frac_filled2[*vit] = sum / (wsum + 0.000001);
-                //BOOST_LOG_TRIVIAL(debug) << "FF after : " << frac_filled2[*vit];
             }
-            for(unsigned int i=0; i < boost::num_vertices(g); i++)
-                frac_filled[i] = frac_filled2[i];
-        }
-        else{
-            // poor man's convolution by repeated averaging of neighboring areas
-            auto vs = vertices(g);
-            for(unsigned int iter=0; iter<80; iter++){
+
+            // all triangles /should/ have about the same size.
+            {
+                auto vs = vertices(g);
+                double s = 0.;
+                for(auto vit = vs.first; vit!=vs.second; vit++){
+                    s += area_map[*vit];
+                }
+                for(auto vit = vs.first; vit!=vs.second; vit++){
+                    area_map[*vit] = std::max(0.0, std::min(area_map[*vit], 2.*s/std::distance(vs.first, vs.second)));
+                }
+            }
+            // initialize weights to constant for BFS
+            auto es = edges(g);
+            for(auto eit = es.first; eit != es.second; eit++){
+                weightmap[*eit] = 1.0;
+            }
+
+            // 2. smooth triangle filled-counters
+            if(true){
+                BOOST_LOG_TRIVIAL(info) << "Smooth Landmass";
+                auto vs = vertices(g);
+                boost::progress_display show_progress(std::distance(vs.first, vs.second));
                 std::vector<double> frac_filled2(boost::num_vertices(g));
                 for(auto vit = vs.first; vit!=vs.second; vit++){
-                    auto es          = boost::out_edges(*vit, g);
-                    double sum       = frac_filled[*vit];
-                    double weightsum = 1.;
-                    for(auto eit = es.first; eit != es.second; eit++){
-                        const auto targetv = target(*eit, g);
-                        sum += frac_filled[targetv] ;
-                        weightsum += 1;
+                    ++show_progress;
+                    //BOOST_LOG_TRIVIAL(debug) << "FF before: " << frac_filled[*vit];
+                    double sum=0, wsum=0, maxd=1E6;
+                    int n_nodes=0;
+                    detail::gauss_accu acc(pos_map[*vit].m_s2_poly.outer()[0], &sum, &wsum, &maxd, &n_nodes, sigma);
+                    try{
+                        breadth_first_search(g, *vit, visitor(acc));
+                    }catch(detail::max_depth_reached){
+                        ;
                     }
-                    frac_filled2[std::distance(vs.first, vit)] =
-                        sum / weightsum;
+                    frac_filled2[*vit] = std::max(0., sum / (wsum + 0.000001));
+                    static int cnt=0;
+                    if(cnt++ % 100 == 0){
+                        BOOST_LOG_TRIVIAL(debug) << "  maxd : " << maxd << " n_nodes: " << n_nodes;
+                    }
                 }
                 for(unsigned int i=0; i < boost::num_vertices(g); i++)
                     frac_filled[i] = frac_filled2[i];
             }
+            return g;
         }
 
-        auto W0 = [&](double v, double v0, double Wv){
-            return Wv * fabs(v - v0)/90.;
-        };
-        auto W1 = [&](double v, double v0, double Wv){
-            return Wv * fabs(v - v0)/180.;
-        };
-        {
-            // 3. set the edge weights.
-            auto es = edges(g);
-            for(auto eit = es.first; eit != es.second; eit++){
-                const auto sourcev = source(*eit, g);
-                const auto targetv = target(*eit, g);
-                double sum = 
-                    frac_filled[vertex_index_map[sourcev]] /** area_map[sourcev]*/ +
-                    frac_filled[vertex_index_map[targetv]] /** area_map[targetv]*/;
-                double weightsum = 2.;
-                    //0.000001 +
-                    //area_map[sourcev] +
-                    //area_map[targetv];
+    myriaworld::triangle_graph
+        determine_edge_weights(myriaworld::triangle_graph& g, double wlat, double wlon){
+            using namespace boost;
+            property_map<triangle_graph, vertex_index_t>::type vertex_index_map = get(vertex_index, g);
+            property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
+            property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+            property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
 
-                sum /= weightsum; 
+            auto W0 = [&](double v, double v0, double Wv){
+                return Wv * fabs(v - v0)/90.;
+            };
+            auto W1 = [&](double v, double v0, double Wv){
+                return Wv * fabs(v - v0)/180.;
+            };
+            {
+                // 3. set the edge weights.
+                BOOST_LOG_TRIVIAL(info) << "Set edge weights";
+                auto es = edges(g);
+                for(auto eit = es.first; eit != es.second; eit++){
+                    const auto sourcev = source(*eit, g);
+                    const auto targetv = target(*eit, g);
+                    double sum = 
+                        frac_filled[vertex_index_map[sourcev]] /** area_map[sourcev]*/ +
+                        frac_filled[vertex_index_map[targetv]] /** area_map[targetv]*/;
+                    double weightsum = 2.;
+                    sum /= weightsum; 
 
-                const auto& p = pos_map[sourcev].m_s2_poly;
-                sum = (1 - sum) 
-                    //;
-                *
-                    ( W0(p.outer()[0].get<0>(), 0., wlat)
-                    + W1(p.outer()[0].get<1>(), 0., wlon));
-                //sum = 1. - (sum-0.1)*(sum-0.1);
-                weightmap[*eit] = sum;
+                    const auto& p = pos_map[sourcev].m_s2_poly;
+                    sum = (1 - sum) 
+                        //;
+                        *
+                        ( W0(p.outer()[0].get<0>(), 54., wlat)
+                          + W1(p.outer()[0].get<1>(), 13., wlon));
+                    //sum = 1. - (sum-0.1)*(sum-0.1);
+                    weightmap[*eit] = std::max(0., sum);
+                }
             }
-        }
 
-        return g;
+            return g;
     }
 }

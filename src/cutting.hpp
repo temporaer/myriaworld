@@ -4,7 +4,7 @@
 
 namespace myriaworld
 {
-    void determine_cuttings(triangle_graph& g);
+    triangle_graph determine_cuttings(triangle_graph& g);
     void flatten(triangle_graph& g, double fact);
 }
 #endif /* __CUTTING_HPP__ */
