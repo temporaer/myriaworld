@@ -6,7 +6,12 @@ namespace myriaworld { namespace geo {
 
     /// shorthand for haversine distance function
     inline double haversine_distance(const polar2_point& a, const polar2_point& b){
-        return bg::distance(a, b, bg::strategy::distance::haversine<double>());
+        using namespace std;
+        //return bg::distance(a, b, bg::strategy::distance::haversine<double>());
+        double lat1=a.get<0>(), lat2=b.get<0>();
+        double lon1=a.get<1>(), lon2=b.get<1>();
+        return 2*asin(sqrt(pow(sin((lat1-lat2) / 2), 2)
+                        + cos(lat1)*cos(lat2)*pow(sin((lon1-lon2) / 2), 2)));
     }
 
     /// check whether the triangle crosses the -180/180 lat line

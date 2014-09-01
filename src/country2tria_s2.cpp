@@ -9,6 +9,8 @@
 #include <s2polygonbuilder.h>
 #include "myriaworld.h"
 #include "country2tria.hpp"
+#include <szl/hashutils.hpp>
+#include <strutil.hpp>
 
 namespace myriaworld
 {
@@ -24,10 +26,8 @@ namespace myriaworld
         std::size_t n_cells = 0;
         for(const auto& c : countries){
             //++show_progress0;
-            std::vector<S2Loop*> loops;
-            S2PolygonBuilderOptions pbo = S2PolygonBuilderOptions::UNDIRECTED_XOR();
-            S2PolygonBuilder pb(pbo);
-            //BOOST_LOG_TRIVIAL(info) << c.m_name;
+            std::vector<S2Polygon*> polys;
+            BOOST_LOG_TRIVIAL(info) << c.m_name;
             for(const auto& poly : c.m_s2_polys){
                 std::vector<S2Point> pts;
                 for(const auto& v : poly.outer()){
@@ -44,16 +44,13 @@ namespace myriaworld
                     std::reverse(pts.begin(), pts.end());
                     loop = new S2Loop(pts);
                 }
-                //BOOST_LOG_TRIVIAL(info) << "    Country Loop Area: " << loop->GetArea();
-                loops.push_back(loop);
-                //S2Loop loop(pts);
-                //pb.AddLoop(&loop);
+                std::vector<S2Loop*> lpv(1, loop);
+                polys.push_back(new S2Polygon(&lpv));
             }
-            auto cptr = std::make_shared<S2Polygon>(&loops);
+            S2Polygon* tmp = S2Polygon::DestructiveUnion(&polys);
+            auto cptr = std::shared_ptr<S2Polygon>(tmp);
             double carea = cptr->GetArea();
             //BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
-            //auto cptr = std::make_shared<S2Polygon>();
-            //pb.AssemblePolygon(cptr.get(), NULL);
 
             // now take the country apart into cells covering it
             S2RegionCoverer coverer;
@@ -123,7 +120,7 @@ namespace myriaworld
             double tria_area = tria.GetArea();
             double tria_country_area = 0.;
 
-            S2Polygon allbits;
+            std::vector<S2Polygon*> allbits;
             for (unsigned int cidx = 0; cidx < flat_countries.size(); ++cidx)
             {
 #if 0
@@ -153,23 +150,22 @@ namespace myriaworld
                             pieces.push_back(piece);
                     }
                 }
-                std::shared_ptr<S2Polygon> isect_ptr( S2Polygon::DestructiveUnion(&pieces) );
-                S2Polygon& isect = *isect_ptr;
+                S2Polygon* isect = S2Polygon::DestructiveUnion(&pieces);
 #endif
-                int n_loops = isect.num_loops();
+                int n_loops = isect->num_loops();
                 if(n_loops == 0)
                     continue;
-                if(isect.GetArea() < 0.00001)
+                if(isect->GetArea() < 0.00001)
                     continue;
-                //BOOST_LOG_TRIVIAL(info) << "Union:        " << isect.GetArea();
-                assert(isect.GetArea() < 10);
-                assert(isect.GetArea() <= tria.GetArea() + 0.000001);
-                tria_country_area += isect.GetArea();
-                allbits.InitToUnion(&allbits, &isect);
+                //BOOST_LOG_TRIVIAL(info) << "Union:        " << isect->GetArea();
+                assert(isect->GetArea() < 10);
+                assert(isect->GetArea() <= tria.GetArea() + 0.000001);
+                tria_country_area += isect->GetArea();
+                allbits.push_back(isect);
                 for (int i = 0; i < n_loops; ++i)
                 {
                     myriaworld::polar2_polygon s2poly;
-                    S2Loop& loop = *isect.loop(i);
+                    S2Loop& loop = *isect->loop(i);
                     if(loop.is_hole())
                         continue;
                     //assert(!loop.is_hole());
@@ -195,9 +191,12 @@ namespace myriaworld
             area_map[*vit] = tria_area;
             frac_filled[*vit] = std::max(0.0, std::min(1.0, tria_country_area / (tria_area + 0.0000001)));
 
+            auto allbits_ = std::shared_ptr<S2Polygon>(
+                    S2Polygon::DestructiveUnion(&allbits));
+
             // everything else must be water!
             S2Polygon waterbits;
-            waterbits.InitToDifference(&tria, &allbits);
+            waterbits.InitToDifference(&tria, allbits_.get());
             for (int i = 0; i < waterbits.num_loops(); ++i)
             {
                 myriaworld::polar2_polygon s2poly;

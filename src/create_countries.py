@@ -91,6 +91,6 @@ def intersections(triangles, countries):
 
 if __name__ == "__main__":
     #generate_cpp_readable_file("easy.txt")
-    triangles = read_triangles("triangles.txt")
+    #triangles = read_triangles("triangles.txt")
     countries = generate_wkt("easy2.txt")
     #intersect = intersections(triangles, countries)
