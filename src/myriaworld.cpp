@@ -186,7 +186,7 @@ int main(){
     using std::string;
     auto countries = c(string("read_countries"), read_countries, string("easy2.txt"));
     g = c(string("country2tria"), side_effect_wrap, country2tria_s2, g, countries);
-    g = c(string("smooth_landmass"), smooth_landmass, g, .2);
+    g = c(string("smooth_landmass"), smooth_landmass, g, .4);
     g = c(string("determine_edge_weights"), determine_edge_weights, g, 2., 20.);
     g = c(string("determine_cuttings"), determine_cuttings, g);
     flatten(g, 1.);

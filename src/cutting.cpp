@@ -2,6 +2,7 @@
 #include "geo.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
+#include <boost/geometry/index/rtree.hpp>
 
 namespace myriaworld
 {
@@ -142,6 +143,59 @@ namespace myriaworld
                     open_list.push_back(targetv);
                 }
             }
+        }
+        {
+            namespace bgi = boost::geometry::index;
+            typedef boost::tuple<cart3_point, cart3_point*, unsigned long> value;
+            bgi::rtree <value, bgi::quadratic<16> > rtree;
+            std::vector<bool> adjusted;
+            adjusted.reserve(1000000);
+            auto vs = boost::vertices(g);
+            unsigned long cnt = 0;
+            for(auto vit = vs.first; vit != vs.second; vit++){
+                for(auto& bits : cb_map[*vit]){
+                    for(auto& pos : bits.m_mappos.outer()){
+                        rtree.insert({pos, &pos, cnt++});
+                        adjusted.push_back(false);
+                    }
+                }
+            }
+            cnt = 0;
+            std::vector<value> qres;
+            std::vector<cart3_point*> actual_neighbors;
+            actual_neighbors.reserve(1000); // plenty
+            qres.reserve(5000); // plenty
+            for(auto vit = vs.first; vit != vs.second; vit++){
+                for(auto& bits : cb_map[*vit]){
+                    for(auto& pos : bits.m_mappos.outer()){
+                        if(adjusted[cnt++])
+                            continue;
+                        const static double eps = 0.003;
+                        auto box = boost::geometry::model::box<cart3_point>(
+                                cart3_point(pos.get<0>() - eps/2., pos.get<1>() - eps/2., pos.get<2>() - eps/2.),
+                                cart3_point(pos.get<0>() + eps/2., pos.get<1>() + eps/2., pos.get<2>() + eps/2.)
+                                );
+                        qres.clear();
+                        rtree.query(bgi::intersects(box), std::back_inserter(qres));
+                        cart3_point sum {0, 0, 0};
+                        int wsum = 0;
+                        actual_neighbors.clear();
+                        for(auto& qp : qres){
+                            if(boost::geometry::distance(qp.get<0>(), pos) < eps){
+                                sum = geo::sum(qp.get<0>(), sum);
+                                wsum ++;
+                                actual_neighbors.push_back(qp.get<1>());
+                                adjusted[qp.get<2>()] = true;
+                            }
+                        }
+                        sum = geo::divide(sum, (double) wsum);
+                        for(auto& qp : actual_neighbors){
+                            *qp = sum;
+                        }
+                    }
+                }
+            }
+            
         }
     }
 }

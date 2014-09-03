@@ -33,6 +33,8 @@ namespace myriaworld{
                             = get(vertex_pos_t(), g);
                         boost::property_map<triangle_graph, vertex_fracfilled_t>::const_type
                             frac_filled = get(vertex_fracfilled_t(), g);
+                        boost::property_map<triangle_graph, vertex_area_t>::const_type area_map 
+                            = get(vertex_area_t(), g);
                         const auto& p0 = pos_map[u].m_s2_poly.outer()[0];
                         const auto& p1 = m_cpos;
                         double dist = geo::haversine_distance(p0, p1);
@@ -44,8 +46,8 @@ namespace myriaworld{
                             throw max_depth_reached();
                         *m_maxd = std::min(weight, *m_maxd);
                         //BOOST_LOG_TRIVIAL(debug) << "        w: " << weight;
-                        *m_sum += weight * frac_filled[u];
-                        *m_weightsum += weight;
+                        *m_sum += weight * area_map[u] * frac_filled[u];
+                        *m_weightsum += weight * area_map[u];
                     }
         };
     }
@@ -394,6 +396,7 @@ namespace myriaworld
             property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
             property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
+            property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
 
             auto W0 = [&](double v, double v0, double Wv){
                 return Wv * fabs(v - v0)/90.;
@@ -409,18 +412,16 @@ namespace myriaworld
                     const auto sourcev = source(*eit, g);
                     const auto targetv = target(*eit, g);
                     double sum = 
-                        frac_filled[vertex_index_map[sourcev]] /** area_map[sourcev]*/ +
-                        frac_filled[vertex_index_map[targetv]] /** area_map[targetv]*/;
-                    double weightsum = 2.;
+                        frac_filled[vertex_index_map[sourcev]] * area_map[sourcev] +
+                        frac_filled[vertex_index_map[targetv]] * area_map[targetv];
+                    double weightsum = area_map[sourcev] + area_map[targetv];
                     sum /= weightsum; 
 
                     const auto& p = pos_map[sourcev].m_s2_poly;
                     sum = (1 - sum) 
-                        //;
                         *
                         ( W0(p.outer()[0].get<0>(), 54., wlat)
                           + W1(p.outer()[0].get<1>(), 13., wlon));
-                    //sum = 1. - (sum-0.1)*(sum-0.1);
                     weightmap[*eit] = std::max(0., sum);
                 }
             }

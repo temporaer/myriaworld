@@ -58,12 +58,14 @@ def plot_polys_2d(fn):
     colors = fe.colors
     def peter(c):
         if c < 0: return 0
-        else:     return 1
-    #colors = map(peter, colors)
+        else:     return 0.8
+    colors = map(peter, colors)
     colors = np.array(colors)
     #colors = np.random.uniform(size=len(verts))
-    ax.add_collection(matplotlib.collections.PolyCollection(verts,
-        array=colors, edgecolor=None, lw=0, alpha=.9, cmap="binary"))
+    col = matplotlib.collections.PolyCollection(verts,
+        array=colors, closed=False, antialiased=2, edgecolor="face", linewidths=1, alpha=1., cmap="binary")
+    col.set_clim(0, 1)
+    ax.add_collection(col)
 
     ax.set_xlim(-4, 4)
     ax.set_ylim(-3, 1.5)
