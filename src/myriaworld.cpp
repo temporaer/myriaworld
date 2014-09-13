@@ -181,7 +181,7 @@ int main(){
     using namespace memoization;
 
     disk c("cache");
-    auto g = get_triangle_graph(7);
+    auto g = get_triangle_graph(6);
 
     using std::string;
     auto countries = c(string("read_countries"), read_countries, string("easy2.txt"));

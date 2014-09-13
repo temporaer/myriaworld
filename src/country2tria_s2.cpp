@@ -9,8 +9,8 @@
 #include <s2polygonbuilder.h>
 #include "myriaworld.h"
 #include "country2tria.hpp"
-#include <szl/hashutils.hpp>
-#include <strutil.hpp>
+//#include <szl/hashutils.hpp>
+//#include <strutil.hpp>
 
 namespace myriaworld
 {
@@ -75,10 +75,11 @@ namespace myriaworld
                 assert(piece->GetArea() < 10);
                 //BOOST_LOG_TRIVIAL(info) << "Country Area: " << carea;
                 //BOOST_LOG_TRIVIAL(info) << "Piece Area: " << piece->GetArea();
-                if(piece->GetArea() < 0.00001)
-                    continue;
-                if(piece->GetArea() > carea + 0.0000001)
-                    continue;
+                // the following two resulted in small holes around countries
+                //if(piece->GetArea() < 0.00001)
+                //    continue;
+                //if(piece->GetArea() > carea + 0.0000001)
+                //    continue;
                 flat_country.push_back(piece);
                 flat_cell.push_back(id0);
             }

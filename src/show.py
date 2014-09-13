@@ -63,7 +63,7 @@ def plot_polys_2d(fn):
     colors = np.array(colors)
     #colors = np.random.uniform(size=len(verts))
     col = matplotlib.collections.PolyCollection(verts,
-        array=colors, closed=False, antialiased=2, edgecolor="face", linewidths=1, alpha=1., cmap="binary")
+        array=colors, closed=False, antialiased=2, edgecolor="face", linewidths=1, alpha=1., cmap="Paired")
     col.set_clim(0, 1)
     ax.add_collection(col)
 

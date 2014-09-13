@@ -380,7 +380,7 @@ namespace myriaworld
                     frac_filled2[*vit] = std::max(0., sum / (wsum + 0.000001));
                     static int cnt=0;
                     if(cnt++ % 100 == 0){
-                        BOOST_LOG_TRIVIAL(debug) << "  maxd : " << maxd << " n_nodes: " << n_nodes;
+                        //BOOST_LOG_TRIVIAL(debug) << "  maxd : " << maxd << " n_nodes: " << n_nodes;
                     }
                 }
                 for(unsigned int i=0; i < boost::num_vertices(g); i++)

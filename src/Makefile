@@ -1,6 +1,8 @@
 #S2LIB=-L ../../google-s2-geometry/build -l google-util-geometry-s2 -l google-base -lgoogle-strings -lgoogle-util-coding -lgoogle-util-math -lgoogle-util-geometry-s2cellid
-S2LIB_SRC=../../../hg/s2-geometry-library/geometry
-S2LIB_BUILD=../../../hg/s2-geometry-library/geometry
+S2LIB_SRC=../../google-s2-geometry/geometry
+S2LIB_BUILD=../../google-s2-geometry/build
+#S2LIB_SRC=../../../hg/s2-geometry-library/geometry
+#S2LIB_BUILD=../../../hg/s2-geometry-library/geometry
 S2LIB= \
 ${S2LIB_BUILD}/libgoogle-util-geometry-s2.a \
 ${S2LIB_BUILD}/libgoogle-util-geometry-s2cellid.a \
@@ -9,7 +11,8 @@ ${S2LIB_BUILD}/libgoogle-util-coding.a \
 ${S2LIB_BUILD}/libgoogle-util-math.a \
 ${S2LIB_BUILD}/libgoogle-strings.a \
 ${S2LIB_BUILD}/libgoogle-base.a \
--l crypto -l ssl -lgflags
+-l crypto -l ssl 
+# -lgflags
 #S2LIB= ${S2LIB_BUILD}/libs2.a \
 
 S2INCLUDE=-I ${S2LIB_SRC}
