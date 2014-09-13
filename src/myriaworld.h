@@ -115,6 +115,7 @@ namespace myriaworld{
 
     struct vertex_pos_t        { typedef boost::vertex_property_tag kind; };
     struct vertex_area_t       { typedef boost::vertex_property_tag kind; };
+    struct vertex_centroid_t   { typedef boost::vertex_property_tag kind; };
     struct vertex_fracfilled_t { typedef boost::vertex_property_tag kind; };
     struct country_bits_t      { typedef boost::vertex_property_tag kind; };
     struct cities_t            { typedef boost::vertex_property_tag kind; };
@@ -128,10 +129,11 @@ namespace myriaworld{
         TriangleEdgeProperty;
     typedef boost::property<vertex_pos_t, triangle,
             boost::property<vertex_area_t, double,
+            boost::property<vertex_centroid_t, polar2_point,
             boost::property<vertex_fracfilled_t, double,
             boost::property<country_bits_t, country_bit_vec,
             boost::property<parent_t, size_t,
-            boost::property<cities_t, city_vec> > > > > >
+            boost::property<cities_t, city_vec> > > > > > >
                 TriangleVertexProperty;
 
     typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS,

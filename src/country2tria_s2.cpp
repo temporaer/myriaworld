@@ -90,6 +90,7 @@ namespace myriaworld
         //BOOST_LOG_TRIVIAL(info) << "avg cells/country: "<<n_cells/(float)countries.size();
         boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
         boost::property_map<triangle_graph, country_bits_t>::type bs_map = get(country_bits_t(), g);
+        boost::property_map<triangle_graph, vertex_centroid_t>::type centroid_map = get(vertex_centroid_t(), g);
         boost::property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
         boost::property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
         //BOOST_LOG_TRIVIAL(info) << "...intersection operation...";
@@ -118,6 +119,10 @@ namespace myriaworld
                 loops.push_back(loop);
                 tria.Init(&loops);
             }
+            auto centroid = tria.GetCentroid();
+            centroid_map[*vit] = polar2_point(
+                                S2LatLng::Longitude(centroid).degrees(),
+                                S2LatLng::Latitude(centroid).degrees());
             double tria_area = tria.GetArea();
             double tria_country_area = 0.;
 

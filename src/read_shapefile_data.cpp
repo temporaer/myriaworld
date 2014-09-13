@@ -29,13 +29,15 @@ namespace myriaworld{
                 template < typename Vertex, typename Graph >
                     void examine_vertex(Vertex u, const Graph & g)
                     {
-                        boost::property_map<triangle_graph, vertex_pos_t>::const_type pos_map 
-                            = get(vertex_pos_t(), g);
+                        //boost::property_map<triangle_graph, vertex_pos_t>::const_type pos_map 
+                        //    = get(vertex_pos_t(), g);
+                        boost::property_map<triangle_graph, vertex_centroid_t>::const_type centroid_map 
+                            = get(vertex_centroid_t(), g);
                         boost::property_map<triangle_graph, vertex_fracfilled_t>::const_type
                             frac_filled = get(vertex_fracfilled_t(), g);
                         boost::property_map<triangle_graph, vertex_area_t>::const_type area_map 
                             = get(vertex_area_t(), g);
-                        const auto& p0 = pos_map[u].m_s2_poly.outer()[0];
+                        const auto& p0 = centroid_map[u];
                         const auto& p1 = m_cpos;
                         double dist = geo::haversine_distance(p0, p1);
                         if(dist > M_PI/2.)
@@ -319,6 +321,7 @@ namespace myriaworld
 
             //property_map<triangle_graph, vertex_index_t>::type vertex_index_map = get(vertex_index, g);
             property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+            property_map<triangle_graph, vertex_centroid_t>::type centroid_map = get(vertex_centroid_t(), g);
             property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
             property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
@@ -371,7 +374,7 @@ namespace myriaworld
                     //BOOST_LOG_TRIVIAL(debug) << "FF before: " << frac_filled[*vit];
                     double sum=0, wsum=0, maxd=1E6;
                     int n_nodes=0;
-                    detail::gauss_accu acc(pos_map[*vit].m_s2_poly.outer()[0], &sum, &wsum, &maxd, &n_nodes, sigma);
+                    detail::gauss_accu acc(centroid_map[*vit], &sum, &wsum, &maxd, &n_nodes, sigma);
                     try{
                         breadth_first_search(g, *vit, visitor(acc));
                     }catch(detail::max_depth_reached){
@@ -420,8 +423,8 @@ namespace myriaworld
                     const auto& p = pos_map[sourcev].m_s2_poly;
                     sum = (1 - sum) 
                         *
-                        ( W0(p.outer()[0].get<0>(), 54., wlat)
-                          + W1(p.outer()[0].get<1>(), 13., wlon));
+                        ( W0(p.outer()[0].get<0>(), 13., wlat)
+                          + W1(p.outer()[0].get<1>(), 54., wlon));
                     weightmap[*eit] = std::max(0., sum);
                 }
             }
