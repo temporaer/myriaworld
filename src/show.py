@@ -9,6 +9,7 @@ import matplotlib.collections
 from mpl_toolkits.mplot3d import Axes3D
 import mpl_toolkits.mplot3d.art3d as ar3
 import mpl_toolkits.mplot3d.axes3d as ax3
+import sys
 from IPython.core.debugger import Tracer
 trace = Tracer()
 
@@ -23,6 +24,10 @@ class SPHTriang:
 
 class FinElem:
     def __init__(self, filename, latlng=True):
+        maxx = -1e6
+        minx = 1e6
+        maxy = -1e6
+        miny = 1e6
         with open(filename) as f:
             L, colors, centroids = [], [], []
             for line in f:
@@ -31,6 +36,10 @@ class FinElem:
                 #centroids.append(map(float, line[2:4]))
                 if latlng:
                     p = np.array(map(float, line[4:])).reshape(-1, 2)
+                    maxx = max(maxx, np.max(p[:, 0]))
+                    minx = min(minx, np.min(p[:, 0]))
+                    maxy = max(maxy, np.max(p[:, 1]))
+                    miny = min(miny, np.min(p[:, 1]))
                 else:
                     p = np.array(map(float, line[4:])).reshape(-1, 3)
                 L.append(p)
@@ -38,9 +47,16 @@ class FinElem:
         self.colors = np.array(colors)
         print "Color Range: ", np.ptp(self.colors)
         self.polys = L
+        self.maxx = maxx
+        self.minx = minx
+        self.maxy = maxy
+        self.miny = miny
+    def set_limits(self, ax):
+        ax.set_xlim(self.minx, self.maxx)
+        ax.set_ylim(self.miny, self.maxy)
 
 def plot_polys_2d(fn):
-    fig, ax = plt.subplots(1, 1, figsize=(9, 16))
+    fig, ax = plt.subplots(1, 1, figsize=(27*2, 27*2))
 
     #lines = np.loadtxt("src/dual_graph.txt").reshape(-1, 5)
     lines = np.loadtxt(fn).reshape(-1, 5)
@@ -67,17 +83,22 @@ def plot_polys_2d(fn):
     #col.set_clim(0, 1)
     ax.add_collection(col)
 
-    ax.set_xlim(-4, 4)
-    ax.set_ylim(-3, 1.5)
-    ax.set_axis_bgcolor('#909090')
+    fe.set_limits(ax)
+    #ax.set_xlim(-4, 4)
+    #ax.set_ylim(-3, 1.5)
+    #ax.set_axis_bgcolor('#909090')
+    ax.set_axis_bgcolor('#FFFFFF')
     if False:
         lines = lines.reshape(-1, 4)
         ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
         ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
-    #ax.xaxis.set_major_locator(plt.NullLocator())
-    #ax.yaxis.set_major_locator(plt.NullLocator())
+    ax.xaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_major_locator(plt.NullLocator())
     ax.set_aspect('equal')
     plt.tight_layout()
+    #print "saving to", sys.argv[1]
+    #plt.savefig(sys.argv[1])
+    print "showing..."
     plt.show()
 
 def plot_polys_3d():
