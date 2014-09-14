@@ -393,19 +393,22 @@ namespace myriaworld
         }
 
     myriaworld::triangle_graph
-        determine_edge_weights(myriaworld::triangle_graph& g, double wlat, double wlon){
+        determine_edge_weights(myriaworld::triangle_graph& g, double wlat, double wlon, double clat, double clon){
             using namespace boost;
             property_map<triangle_graph, vertex_index_t>::type vertex_index_map = get(vertex_index, g);
             property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
-            property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+            property_map<triangle_graph, vertex_centroid_t>::type centroid_map = get(vertex_centroid_t(), g);
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
             property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
 
             auto W0 = [&](double v, double v0, double Wv){
-                return Wv * fabs(v - v0)/90.;
+                return Wv * pow(fabs(v - v0)/90., 1.0);
             };
             auto W1 = [&](double v, double v0, double Wv){
-                return Wv * fabs(v - v0)/180.;
+                return Wv * pow(fabs(v - v0)/180., 1.0);
+            };
+            auto WNorm = [&](double a, double b){
+                return pow(a*a + b*b, 0.5);
             };
             {
                 // 3. set the edge weights.
@@ -420,11 +423,10 @@ namespace myriaworld
                     double weightsum = area_map[sourcev] + area_map[targetv];
                     sum /= weightsum; 
 
-                    const auto& p = pos_map[sourcev].m_s2_poly;
                     sum = (1 - sum) 
-                        *
-                        ( W0(p.outer()[0].get<0>(), 13., wlat)
-                          + W1(p.outer()[0].get<1>(), 54., wlon));
+                        + 
+                        WNorm( W0(centroid_map[sourcev].get<0>(), clat, wlat)
+                          , W1(centroid_map[sourcev].get<1>(), clon, wlon));
                     weightmap[*eit] = std::max(0., sum);
                 }
             }

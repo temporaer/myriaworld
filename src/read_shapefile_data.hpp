@@ -11,7 +11,7 @@ namespace myriaworld
     myriaworld::triangle_graph get_triangle_graph(int maxlevel);
 
     myriaworld::triangle_graph smooth_landmass(myriaworld::triangle_graph& g, double sigma);
-    myriaworld::triangle_graph determine_edge_weights(myriaworld::triangle_graph& g, double wlat, double wlon);
+    myriaworld::triangle_graph determine_edge_weights(myriaworld::triangle_graph& g, double wlat, double wlon, double clat, double clon);
 
 }
 #endif /* __READ_SHAPEFILE_DATA_HPP__ */
