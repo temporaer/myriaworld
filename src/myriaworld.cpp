@@ -181,13 +181,13 @@ int main(){
     using namespace memoization;
 
     disk c("cache");
-    auto g = get_triangle_graph(6);
+    auto g = get_triangle_graph(7);
 
     using std::string;
     auto countries = c(string("read_countries"), read_countries, string("easy2.txt"));
     g = c(string("country2tria"), side_effect_wrap, country2tria_s2, g, countries);
     g = c(string("smooth_landmass"), smooth_landmass, g, .4);
-    g = c(string("determine_edge_weights"), determine_edge_weights, g, 2., 20.);
+    g = c(string("determine_edge_weights"), determine_edge_weights, g, .1, 2., 10, 0);
     g = c(string("determine_cuttings"), determine_cuttings, g);
     flatten(g, 1.);
     write_s2centroids("triagrid.txt", g);
