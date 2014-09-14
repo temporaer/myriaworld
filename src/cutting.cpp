@@ -144,7 +144,8 @@ namespace myriaworld
                 }
             }
         }
-        {
+        if(0){
+            // merging close-by points into one
             namespace bgi = boost::geometry::index;
             typedef boost::tuple<cart3_point, cart3_point*, unsigned long> value;
             bgi::rtree <value, bgi::quadratic<16> > rtree;
