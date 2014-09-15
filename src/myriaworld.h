@@ -61,21 +61,22 @@ namespace myriaworld{
     };
 
     struct country_bit{
-        boost::shared_ptr<country> m_country;
         cart3_polygon m_c3_poly;   // 3d coordinate on unit sphere
         double m_mapcolor;
         double m_scalerank;
+        std::string m_name;
         cart3_polygon m_mappos;   // coordinate on map
         polar2_polygon m_s2_poly;  // as read from shapefile
         country_bit(const polar2_polygon& sp):m_s2_poly(sp){}
         template<class Archive>
         void serialize(Archive& ar, const unsigned long ){
-            ar & m_c3_poly & m_mappos & m_s2_poly & m_mappos & m_scalerank & m_mapcolor & m_scalerank;
+            ar & m_c3_poly & m_mappos & m_s2_poly & m_mappos & m_scalerank & m_mapcolor & m_scalerank & m_name;
         }
         country_bit(){}
         country_bit(const country& c)
             : m_mapcolor(c.m_mapcolor),
-              m_scalerank(c.m_scalerank)
+              m_scalerank(c.m_scalerank),
+              m_name(c.m_name)
         {}
     };
 

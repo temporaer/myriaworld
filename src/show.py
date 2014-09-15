@@ -59,39 +59,34 @@ def plot_polys_2d(fn):
     fig, ax = plt.subplots(1, 1, figsize=(27*2, 27*2))
 
     #lines = np.loadtxt("src/dual_graph.txt").reshape(-1, 5)
-    lines = np.loadtxt(fn).reshape(-1, 5)
-    line_colors = lines[:, 0]
-    lines = lines[:, 1:].reshape(-1, 2, 2)
-    linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
-    linecol.set_array(line_colors)
+    #lines = np.loadtxt(fn).reshape(-1, 5)
+    #line_colors = lines[:, 0]
+    #lines = lines[:, 1:].reshape(-1, 2, 2)
+    #linecol = matplotlib.collections.LineCollection(lines, cmap="jet", lw=3)
+    #linecol.set_array(line_colors)
     #trace()
     #ax.add_collection(linecol)
 
     ##fe = FinElem("src/tbits.txt", latlng=True)
     #fe = FinElem("triagrid_poly.txt", latlng=True)
-    fe = FinElem("flattened.txt", latlng=True)
+    fe = FinElem("/tmp/flattened.txt", latlng=True)
     verts = fe.polys
     colors = fe.colors
+    cmap = 'Paired'
     def peter(c):
         if c < 0: return 0
         else:     return 0.8
-    #colors = map(peter, colors)
+    #colors = map(peter, colors); cmap = 'binary'
     colors = np.array(colors)
     #colors = np.random.uniform(size=len(verts))
     col = matplotlib.collections.PolyCollection(verts,
-        array=colors, closed=False, antialiased=2, edgecolor="face", linewidths=1, alpha=1., cmap="Paired")
+        array=colors, closed=False, antialiased=2, edgecolor="face", linewidths=1, alpha=1., cmap=cmap)
     #col.set_clim(0, 1)
     ax.add_collection(col)
 
     fe.set_limits(ax)
-    #ax.set_xlim(-4, 4)
-    #ax.set_ylim(-3, 1.5)
     #ax.set_axis_bgcolor('#909090')
     ax.set_axis_bgcolor('#FFFFFF')
-    if False:
-        lines = lines.reshape(-1, 4)
-        ax.set_xlim(np.min(lines[:,2]), np.max(lines[:,2]))
-        ax.set_ylim(np.min(lines[:,3]), np.max(lines[:,3]))
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.set_aspect('equal')

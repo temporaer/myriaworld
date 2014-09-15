@@ -181,7 +181,7 @@ int main(){
     using namespace memoization;
 
     disk c("cache");
-    auto g = get_triangle_graph(7);
+    auto g = get_triangle_graph(6);
 
     using std::string;
     auto countries = c(string("read_countries"), read_countries, string("easy2.txt"));
@@ -190,6 +190,6 @@ int main(){
     g = c(string("determine_edge_weights"), determine_edge_weights, g, .1, .5, 12, 0);
     g = c(string("determine_cuttings"), determine_cuttings, g);
     flatten(g, 1.);
-    write_s2centroids("triagrid.txt", g);
-    write_flattened("flattened.txt", g);
+    //write_s2centroids("/tmp/triagrid.txt", g);
+    write_flattened("/tmp/flattened.txt", g);
 }

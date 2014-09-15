@@ -372,7 +372,7 @@ namespace myriaworld
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
             property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
 
-            if(0){
+            if(1){
                 // strategically increase the weight of some countries,
                 // which are notorious for being split
                 property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
@@ -381,11 +381,11 @@ namespace myriaworld
                 for(auto vit = vs.first; vit!=vs.second; vit++){
                     bool double_weight = false;
                     for(const auto& p_ : bits_map[*vit]){
-                        if(p_.m_country->m_name == "Greenland"){
+                        if(p_.m_name == "Greenland"){
                             double_weight = true;
                             break;
                         }
-                        if(p_.m_country->m_name == "Antarctica"){
+                        if(p_.m_name == "Antarctica"){
                             double_weight = true;
                             break;
                         }
