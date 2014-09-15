@@ -327,36 +327,7 @@ namespace myriaworld
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
             property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
 
-            if(0){   // determine areas
-                // done in country2tria_s2.cpp
-                auto vs = vertices(g);
-                for(auto vit = vs.first; vit!=vs.second; vit++){
-                    auto p = pos_map[*vit].m_s2_poly;
-                    //bg::correct(p);
-                    area_map[*vit] = bg::area(p);
 
-                    double sum = 0.0;
-                    for(const auto& p_ : bits_map[*vit]){
-                        auto p = p_.m_s2_poly;
-                        //bg::correct(p);
-                        sum += bg::area(p);
-                    }
-                    sum /= area_map[*vit];
-                    frac_filled[*vit] = std::max(0.0, std::min(1.0, sum));
-                }
-            }
-
-            // all triangles /should/ have about the same size.
-            {
-                auto vs = vertices(g);
-                double s = 0.;
-                for(auto vit = vs.first; vit!=vs.second; vit++){
-                    s += area_map[*vit];
-                }
-                for(auto vit = vs.first; vit!=vs.second; vit++){
-                    area_map[*vit] = std::max(0.0, std::min(area_map[*vit], 2.*s/std::distance(vs.first, vs.second)));
-                }
-            }
             // initialize weights to constant for BFS
             auto es = edges(g);
             for(auto eit = es.first; eit != es.second; eit++){
@@ -401,6 +372,28 @@ namespace myriaworld
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
             property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
 
+            if(0){
+                // strategically increase the weight of some countries,
+                // which are notorious for being split
+                property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
+                // main work is done in country2tria_s2.cpp
+                auto vs = vertices(g);
+                for(auto vit = vs.first; vit!=vs.second; vit++){
+                    bool double_weight = false;
+                    for(const auto& p_ : bits_map[*vit]){
+                        if(p_.m_country->m_name == "Greenland"){
+                            double_weight = true;
+                            break;
+                        }
+                        if(p_.m_country->m_name == "Antarctica"){
+                            double_weight = true;
+                            break;
+                        }
+                    }
+                    if(double_weight)
+                        frac_filled[*vit] *= 2.;
+                }
+            }
 
             auto W0 = [&](double v, double v0, double Wv){
                 return Wv * pow(fabs(v - v0)/180., 0.5);
