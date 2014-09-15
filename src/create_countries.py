@@ -56,7 +56,8 @@ def generate_wkt(filename):
             for index in xrange(layer.GetFeatureCount()):
                 feature = layer.GetFeature(index)
                 try:
-                    f.write("%s;%d;%d;" % (feature['NAME_LONG'], feature['MAPCOLOR9'], feature['scalerank']))
+                    print "writing `%s'" % feature['NAME_LONG']
+                    f.write("%s;%d;%d;" % (feature['NAME_LONG'], feature['MAPCOLOR7'], feature['scalerank']))
                 except:
                     f.write("OCEAN;")
                 geometry = feature.GetGeometryRef()
