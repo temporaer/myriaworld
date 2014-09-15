@@ -401,11 +401,12 @@ namespace myriaworld
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
             property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
 
+
             auto W0 = [&](double v, double v0, double Wv){
-                return Wv * pow(fabs(v - v0)/90., 1.0);
+                return Wv * pow(fabs(v - v0)/180., 0.5);
             };
             auto W1 = [&](double v, double v0, double Wv){
-                return Wv * pow(fabs(v - v0)/180., 1.0);
+                return Wv * pow(fabs(v - v0)/90., 0.5);
             };
             auto WNorm = [&](double a, double b){
                 return pow(a*a + b*b, 0.5);
