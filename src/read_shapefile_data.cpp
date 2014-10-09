@@ -320,13 +320,12 @@ namespace myriaworld
 
 
             //property_map<triangle_graph, vertex_index_t>::type vertex_index_map = get(vertex_index, g);
-            property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+            //property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
             property_map<triangle_graph, vertex_centroid_t>::type centroid_map = get(vertex_centroid_t(), g);
-            property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
+            //property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
             property_map<triangle_graph, vertex_fracfilled_t>::type frac_filled = get(vertex_fracfilled_t(), g);
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
-            property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
-
+            //property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
 
             // initialize weights to constant for BFS
             auto es = edges(g);
@@ -372,7 +371,7 @@ namespace myriaworld
             property_map<triangle_graph, edge_weight_t>::type weightmap = get(edge_weight, g);
             property_map<triangle_graph, vertex_area_t>::type area_map = get(vertex_area_t(), g);
 
-            if(1){
+            if(0){
                 // strategically increase the weight of some countries,
                 // which are notorious for being split
                 property_map<triangle_graph, country_bits_t>::type bits_map = get(country_bits_t(), g);
@@ -395,14 +394,14 @@ namespace myriaworld
                 }
             }
 
-            auto W0 = [&](double v, double v0, double Wv){
-                return Wv * pow(fabs(v - v0)/180., 0.5);
+            auto W0 = [&](double v, double v0){
+                return pow(fabs(v - v0)/180., 0.5);
             };
-            auto W1 = [&](double v, double v0, double Wv){
-                return Wv * pow(fabs(v - v0)/90., 0.5);
+            auto W1 = [&](double v, double v0){
+                return pow(fabs(v - v0)/45., 0.3);
             };
             auto WNorm = [&](double a, double b){
-                return pow(a*a + b*b, 0.5);
+                return wlat * a*a + wlon * b*b;
             };
             {
                 // 3. set the edge weights.
@@ -417,11 +416,12 @@ namespace myriaworld
                     double weightsum = area_map[sourcev] + area_map[targetv];
                     sum /= weightsum; 
 
-                    sum = (1 - sum) 
-                        + 
-                        WNorm( W0(centroid_map[sourcev].get<0>(), clat, wlat)
-                          , W1(centroid_map[sourcev].get<1>(), clon, wlon));
-                    weightmap[*eit] = std::max(0., sum);
+                    sum = (1 - sum) * (1 - sum)
+                        * 
+                        WNorm( W0(centroid_map[sourcev].get<0>(), clat)
+                          , W1(centroid_map[sourcev].get<1>(), clon));
+                    //weightmap[*eit] = std::max(0., sum);
+                    weightmap[*eit] = std::exp(sum);
                 }
             }
 

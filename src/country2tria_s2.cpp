@@ -161,8 +161,8 @@ namespace myriaworld
                 int n_loops = isect->num_loops();
                 if(n_loops == 0)
                     continue;
-                if(isect->GetArea() < 0.00001)
-                    continue;
+                //if(isect->GetArea() < 0.00001)
+                //    continue;
                 //BOOST_LOG_TRIVIAL(info) << "Union:        " << isect->GetArea();
                 assert(isect->GetArea() < 10);
                 assert(isect->GetArea() <= tria.GetArea() + 0.000001);
