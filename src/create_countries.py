@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import itertools
 from collections import defaultdict
-import shapefile as S
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches
@@ -13,6 +12,7 @@ from IPython.core.debugger import Tracer
 trace = Tracer()
 
 def generate_cpp_readable_file(filename):
+    import shapefile as S
     with open(filename, "w") as f:
         countries = S.Reader("../data/ne_10m_admin_0_countries")
         oceans = S.Reader("../data/ne_10m_ocean")
@@ -45,6 +45,7 @@ def generate_wkt(filename):
     driver = ogr.GetDriverByName('ESRI Shapefile')
     # Open a shapefile
     countries_shp = "../data/ne_10m_admin_0_countries.shp"
+    #countries_shp = "../data/ne_10m_admin_0_boundary_lines_land.shp"
     ocean_shp = "../data/ne_10m_ocean.shp"
     country_ds = driver.Open(countries_shp, 0)
     ocean_ds = driver.Open(ocean_shp, 0)
@@ -56,6 +57,8 @@ def generate_wkt(filename):
             for index in xrange(layer.GetFeatureCount()):
                 feature = layer.GetFeature(index)
                 try:
+                    #print "writing %d, `%s'" % (index, feature['type'])
+                    #f.write("%s;%d;%d;" % (feature['adm0_a3_l'], feature['labelrank'], feature['labelrank']))
                     print "writing `%s'" % feature['NAME_LONG']
                     f.write("%s;%d;%d;" % (feature['NAME_LONG'], feature['MAPCOLOR7'], feature['scalerank']))
                 except:

@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import itertools
 from collections import defaultdict
-import shapefile as S
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches
@@ -91,8 +90,8 @@ def plot_polys_2d(fn):
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.set_aspect('equal')
     plt.tight_layout()
-    #print "saving to", sys.argv[1]
-    #plt.savefig(sys.argv[1])
+    print "saving to", sys.argv[1]
+    plt.savefig(sys.argv[1])
     print "showing..."
     plt.show()
 
@@ -135,6 +134,7 @@ def plot_trias_3d():
     plt.show()
 
 def main():
+    import shapefile as S
     countries = S.Reader("../data/ne_10m_ocean")
     boundaries = S.Reader("../data/ne_10m_admin_0_boundary_lines_land")
     popp = S.Reader("../data/ne_10m_populated_places")
