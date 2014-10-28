@@ -6,8 +6,11 @@
 #include "geo.hpp"
 #include <boost/graph/adj_list_serialize.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/program_options.hpp>
+#include <boost/format.hpp>
 //#include <boost/geometry/index/detail/serialization.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/geometry/strategies/cartesian/side_by_triangle.hpp>
 #include "boost_geo_serialize.hpp"
 
 #include "hash_functions.hpp"
@@ -26,7 +29,7 @@ void write_flattened(
     using boost::edge_weight_t;
     using boost::edge_weight;
 
-    //boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
+    boost::property_map<triangle_graph, vertex_pos_t>::type pos_map = get(vertex_pos_t(), g);
     //boost::property_map<triangle_graph, edge_weight_t>::type weight_map = get(edge_weight, g);
     //boost::property_map<triangle_graph, shared_edge_t>::type se_map = get(shared_edge_t(), g);
     boost::property_map<triangle_graph, country_bits_t>::type bs_map = get(country_bits_t(), g);
@@ -36,10 +39,21 @@ void write_flattened(
     unsigned int idx=0;
     auto vs = boost::vertices(g);
     for(auto vit = vs.first; vit != vs.second; vit++){
+        {
+            // do not draw triangles facing away from the viewer
+            using myriaworld::cart2_point;
+            namespace bg = boost::geometry;
+            auto& p = pos_map[*vit].m_mappos.outer();
+            cart2_point p0(p[0].get<0>(), p[0].get<1>());
+            cart2_point p1(p[1].get<0>(), p[1].get<1>());
+            cart2_point p2(p[2].get<0>(), p[2].get<1>());
+            if(bg::strategy::side::side_by_triangle<double>::apply(p0, p1, p2) < 0)
+                continue;
+        }
         auto& tbits = bs_map[*vit];
         double color = frac_filled[*vit];
         for(const auto& bit : tbits){
-            color = bit.m_mapcolor;
+            //color = bit.m_mapcolor;
             auto& poly = bit.m_mappos;
             if(poly.outer().size() < 2)
                 continue;
@@ -175,21 +189,73 @@ myriaworld::triangle_graph side_effect_wrap2(
     return g;
 }
 
+int main(int argc, char** argv){
 
-int main(){
+    namespace po = boost::program_options;
+    po::options_description desc("Allowed Options");
+    double sigma, wlat, wlon, clat, clon, alpha;
+    std::string output, format, cmap;
+    int depth, steps, rsteps;
+    desc.add_options()
+        ("help", "Produce help message")
+        ("render", po::value<std::string>(&format)->default_value("png"), "render to this format (png, pdf, ...)")
+        ("output", po::value<std::string>(&output)->default_value("myriaworld"), "an identifier for output files")
+        ("cmap", po::value<std::string>(&cmap)->default_value("Paired"), "colormap (binary, ...)")
+        ("unfold", po::value<int>(&steps)->default_value(1), "steps from 0 to angle")
+        ("rotate", po::value<int>(&rsteps)->default_value(1), "rotation steps from (clon-180) to clon")
+        ("depth", po::value<int>(&depth)->default_value(5), "How often to split triangles recursively")
+        ("sigma", po::value<double>(&sigma)->default_value(0.7), "how much to smooth landmass")
+        ("wlat", po::value<double>(&wlat)->default_value(0.1), "latitude graticular weight")
+        ("wlon", po::value<double>(&wlon)->default_value(0.5), "longitude graticular weight")
+        ("clat", po::value<double>(&clat)->default_value(10), "latitude map center")
+        ("clon", po::value<double>(&clon)->default_value(10), "longitude map center")
+        ("alpha", po::value<double>(&alpha)->default_value(1.), "flattening angle")
+        ;
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+            options(desc).run(), vm);
+    po::notify(vm);
+    
+    if(vm.count("help")){
+        std::cout << desc << std::endl;
+        return 0;
+    }
+
     using namespace myriaworld;
     using namespace memoization;
 
-    disk c("cache");
-    auto g = get_triangle_graph(6);
+    disk c((boost::format("out/%s")%output).str());
+    auto g = get_triangle_graph(depth);
 
     using std::string;
     auto countries = c(string("read_countries"), read_countries, string("easy2.txt"));
     g = c(string("country2tria"), side_effect_wrap, country2tria_s2, g, countries);
-    g = c(string("smooth_landmass"), smooth_landmass, g, .7);
-    g = c(string("determine_edge_weights"), determine_edge_weights, g, .1, .5, 10, 10);
-    g = c(string("determine_cuttings"), determine_cuttings, g);
-    flatten(g, 1.);
-    //write_s2centroids("/tmp/triagrid.txt", g);
-    write_flattened("/tmp/flattened.txt", g);
+    g = c(string("smooth_landmass"), smooth_landmass, g, sigma);
+    auto render = [&](int cnt){
+        if(vm.count("render")){
+            auto flattened_fn = boost::format("out/%s-flattened.txt") % output;
+            write_flattened(flattened_fn.str(), g);
+            auto output_fn = boost::format("out/%s-%04d.%s") % output % cnt % format;
+            int ret = system(boost::str(boost::format("python show.py %s %s %s") % flattened_fn % output_fn % cmap).c_str());
+            if(ret != 0)
+                throw std::runtime_error("failed to call python renderer");
+        }
+    };
+
+    int cnt=0;
+    for(int step = 0; step < rsteps; step++, cnt++){
+        double clon2 = clon - 180 + (step+1.0)/rsteps * 180.;
+        g = c(string("determine_edge_weights"), determine_edge_weights, g, wlat, wlon, clat, clon2);
+        g = c(string("determine_cuttings"), determine_cuttings, g);
+
+        flatten(g, 0, clat, clon2);
+        render(cnt);
+    }
+
+    for(int step = (steps==1?0:-1); step < steps; step++, cnt++){
+        double a = (step+1.0)/steps * alpha;
+        flatten(g, a, clat, clon);
+        render(cnt);
+    }
+
 }

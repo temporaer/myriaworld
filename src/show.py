@@ -54,7 +54,7 @@ class FinElem:
         ax.set_xlim(self.minx, self.maxx)
         ax.set_ylim(self.miny, self.maxy)
 
-def plot_polys_2d(fn):
+def plot_polys_2d(flattened_fn, output_fn, cmap):
     fig, ax = plt.subplots(1, 1, figsize=(27*2, 27*2))
 
     #lines = np.loadtxt("src/dual_graph.txt").reshape(-1, 5)
@@ -68,30 +68,36 @@ def plot_polys_2d(fn):
 
     ##fe = FinElem("src/tbits.txt", latlng=True)
     #fe = FinElem("triagrid_poly.txt", latlng=True)
-    fe = FinElem("/tmp/flattened.txt", latlng=True)
+    fe = FinElem(flattened_fn, latlng=True)
     verts = fe.polys
     colors = fe.colors
-    cmap = 'Paired'
+    #cmap = 'Paired'
     def peter(c):
         if c < 0: return 0
         else:     return 0.8
-    #colors = map(peter, colors); cmap = 'binary'
+    if cmap == "binary":
+        #colors = map(peter, colors)
+        pass
     colors = np.array(colors)
     #colors = np.random.uniform(size=len(verts))
     col = matplotlib.collections.PolyCollection(verts,
-        array=colors, closed=False, antialiased=2, edgecolor="face", linewidths=1, alpha=1., cmap=cmap)
+        array=colors, closed=False, antialiased=2,
+        edgecolor="face",
+        linewidths=1, alpha=1., cmap=cmap)
     #col.set_clim(0, 1)
     ax.add_collection(col)
 
     fe.set_limits(ax)
-    #ax.set_axis_bgcolor('#909090')
-    ax.set_axis_bgcolor('#FFFFFF')
+    if cmap == 'binary':
+        ax.set_axis_bgcolor('#909090')
+    else:
+        ax.set_axis_bgcolor('#FFFFFF')
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.set_aspect('equal')
     plt.tight_layout()
-    print "saving to", sys.argv[1]
-    plt.savefig(sys.argv[1])
+    print "saving to", output_fn
+    plt.savefig(output_fn)
     print "showing..."
     plt.show()
 
@@ -188,6 +194,6 @@ def teststreamplot():
     plt.show()
 
 if __name__ == "__main__":
-    plot_polys_2d("triagrid.txt")
+    plot_polys_2d(sys.argv[1], sys.argv[2], sys.argv[3])
     #main()
     #teststreamplot()

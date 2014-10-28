@@ -326,14 +326,16 @@ namespace myriaworld
             double ang = angle_between(base, dst);
             cart3_point pt1_orig = dst.outer()[pt1];
             {
-                dst.outer()[pt1] = rotate_around_axis(dst, a10, a11, pt1, fact * ang);
-                double ang2 = angle_between(base, dst);
-                if(fabs(ang2) > fabs(ang)){
-                    dst.outer()[pt1] = pt1_orig;
-                    dst.outer()[pt1] = rotate_around_axis(dst, a10, a11, pt1, -fact * ang);
+                if(fact != 0.){
+                    dst.outer()[pt1] = rotate_around_axis(dst, a10, a11, pt1, fact * ang);
+                    double ang2 = angle_between(base, dst);
+                    if(fabs(ang2) > fabs(ang)){
+                        dst.outer()[pt1] = pt1_orig;
+                        dst.outer()[pt1] = rotate_around_axis(dst, a10, a11, pt1, -fact * ang);
+                    }
+                    //double ang3 = angle_between(base, dst);
+                    //std::cout << "New angle betwen base and dst: " << ang3 << std::endl;
                 }
-                //double ang3 = angle_between(base, dst);
-                //std::cout << "New angle betwen base and dst: " << ang3 << std::endl;
             }
             return dst;
         }

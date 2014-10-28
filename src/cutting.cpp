@@ -71,7 +71,7 @@ namespace myriaworld
         return q;
     }
 
-    void flatten(triangle_graph& g, double fact){
+    void flatten(triangle_graph& g, double fact, double clat, double clon){
         std::vector < boost::graph_traits<triangle_graph>::vertex_descriptor >
             p(boost::num_vertices(g));
         boost::property_map<triangle_graph, vertex_pos_t>::type pos_map 
@@ -80,6 +80,8 @@ namespace myriaworld
             = get(shared_edge_t(), g);
         boost::property_map<triangle_graph, country_bits_t>::type cb_map 
             = get(country_bits_t(), g);
+        boost::property_map<triangle_graph, vertex_centroid_t>::type centroid_map
+            = get(vertex_centroid_t(), g);
 
 
         {
@@ -95,10 +97,37 @@ namespace myriaworld
 
             using namespace boost;
             std::vector<triavertex_descriptor> open_list;
-            open_list.push_back(0);
+
+            int start_idx = 0;
+            {
+                int s = num_vertices(g);
+                double min_d = 1E9;
+                polar2_point cmp(clon,clat);
+                BOOST_LOG_TRIVIAL(warning) << "   clon " << clon << " clat " <<clat;
+                for(unsigned int i=0; i< s; i++){
+                    double dist = geo::haversine_distance(centroid_map[i], cmp);
+                    
+                    if(dist < min_d) {
+                        min_d = dist;
+                        start_idx = i;
+                    }
+                    //BOOST_LOG_TRIVIAL(warning) << "   c "<<  centroid_map[i].get<0>() << ", " << centroid_map[i].get<1>();
+                    //BOOST_LOG_TRIVIAL(warning) << "   i " << i << " si " << start_idx << " d " << min_d;
+                }
+            }
+            BOOST_LOG_TRIVIAL(warning) << "start_idx " << start_idx;
+
+            open_list.push_back(start_idx);
 
             // first 3d point on map
-            pos_map[0].m_mappos = tria3dto2d(pos_map[0].m_c3_poly);
+            //pos_map[start_idx].m_mappos = tria3dto2d(pos_map[start_idx].m_c3_poly);
+            {
+                boost::geometry::transform(pos_map[start_idx].m_c3_poly, pos_map[start_idx].m_s2_poly);
+                boost::geometry::transform(geo::rotated(pos_map[start_idx].m_s2_poly, 
+                            -centroid_map[start_idx].get<0>(),
+                            -centroid_map[start_idx].get<1>()), 
+                        pos_map[start_idx].m_mappos);
+            }
 
 
             while(open_list.size() > 0){

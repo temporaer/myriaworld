@@ -5,6 +5,6 @@
 namespace myriaworld
 {
     triangle_graph determine_cuttings(triangle_graph& g);
-    void flatten(triangle_graph& g, double fact);
+    void flatten(triangle_graph& g, double fact, double clat, double clon);
 }
 #endif /* __CUTTING_HPP__ */
