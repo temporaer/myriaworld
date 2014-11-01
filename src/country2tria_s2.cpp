@@ -225,6 +225,7 @@ namespace myriaworld
                 country_bit bit;
                 bit.m_scalerank = 0;
                 bit.m_mapcolor = -1;
+                bit.m_name = "OCEAN";
                 //bg::correct(s2poly);
                 bit.m_s2_poly = s2poly;
                 bs_map[*vit].push_back(bit);

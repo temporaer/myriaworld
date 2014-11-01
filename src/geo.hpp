@@ -32,8 +32,8 @@ namespace myriaworld { namespace geo {
     void cast_cart_2_polar2_equatorial_2(polar2_point& dst, const cart2_point& src, double addlat, double addlng=0.);
     void cast_cart_2_polar2_equatorial_2(polar2_polygon& dst, const cart2_polygon& src, double addlat, double addlng=0.);
     void cast_cart_2_polar2_equatorial_2(polar2_multipolygon& dst, const cart2_multipolygon& src, double addlat, double addlng=0.);
-    polar2_point rotated(const polar2_point& sp, double lat_off, double lng_off);
-    polar2_polygon rotated(const polar2_polygon& sp, double lat_off, double lng_off);
+    polar2_polygon rotated(const polar2_polygon& sp, double lat_off, double lng_off, double roll);
+    cart3_polygon rotated(const cart3_polygon& sp, double lat_off, double lng_off, double roll);
 
     double dot(const cart3_point& a, const cart3_point& b);
     cart3_point difference(const cart3_point& a, const cart3_point& b);

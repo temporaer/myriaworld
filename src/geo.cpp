@@ -6,6 +6,7 @@
 
 // this is from boost numeric bindings!
 #include <boost/numeric/bindings/atlas/clapack.hpp>
+#include<boost/geometry/strategies/transform/matrix_transformers.hpp>
 
 
 namespace myriaworld
@@ -94,64 +95,68 @@ namespace myriaworld
         }
     }
         //polar2_point rotated(const polar2_point& sp, double lat_off, double lng_off){
-        polar2_point rotated(const polar2_point& , double , double ){
-            //using namespace boost::geometry::strategy::transform;
-            //cart3_point c3p, tmp;
-            polar2_point sp2;
-/*
- *            from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> sph2cart3;
- *            from_cartesian_3_to_spherical_equatorial_2<cart3_point, polar2_point> cart3sph2;
- *
- *            auto quaternion = boost::math::spherical(1.0, 0., lat_off/180.*M_PI, lng_off/180.*M_PI);
- *            double qw = quaternion.R_component_1();
- *            double qx = quaternion.R_component_2();
- *            double qy = quaternion.R_component_3();
- *            double qz = quaternion.R_component_4();
- *            const double n = 1.0f/sqrt(qx*qx+qy*qy+qz*qz+qw*qw);
- *            qx *= n; qy *= n; qz *= n; qw *= n;
- *            ublas_transformer<double, 3, 3> combined(
- *                    1.0f - 2.0f*qy*qy - 2.0f*qz*qz, 2.0f*qx*qy - 2.0f*qz*qw, 2.0f*qx*qz + 2.0f*qy*qw, 0.0f,
- *                    2.0f*qx*qy + 2.0f*qz*qw, 1.0f - 2.0f*qx*qx - 2.0f*qz*qz, 2.0f*qy*qz - 2.0f*qx*qw, 0.0f,
- *                    2.0f*qx*qz - 2.0f*qy*qw, 2.0f*qy*qz + 2.0f*qx*qw, 1.0f - 2.0f*qx*qx - 2.0f*qy*qy, 0.0f,
- *                    0.0f, 0.0f, 0.0f, 1.0f);
- *            
- *            bg::transform(sp, c3p, sph2cart3);
- *            bg::transform(c3p, tmp, combined);
- *            bg::transform(tmp, sp2, cart3sph2);
- */
-            return sp2;
-        }
-        polar2_polygon rotated(const polar2_polygon&, double , double ){
-        //polar2_polygon rotated(const polar2_polygon& sp, double lat_off, double lng_off){
-            //using namespace boost::geometry::strategy::transform;
-            polar2_polygon res;
+        ////polar2_point rotated(const polar2_point& , double , double ){
+        //    using namespace boost::geometry::strategy::transform;
+        //    cart3_point c3p, tmp;
+        //    polar2_point sp2;
+        //    from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> sph2cart3;
+        //    from_cartesian_3_to_spherical_equatorial_2<cart3_point, polar2_point> cart3sph2;
+
+        //    auto quaternion = boost::math::spherical(1.0, 0., lat_off/180.*M_PI, lng_off/180.*M_PI);
+        //    double qw = quaternion.R_component_1();
+        //    double qx = quaternion.R_component_2();
+        //    double qy = quaternion.R_component_3();
+        //    double qz = quaternion.R_component_4();
+        //    const double n = 1.0f/sqrt(qx*qx+qy*qy+qz*qz+qw*qw);
+        //    qx *= n; qy *= n; qz *= n; qw *= n;
+        //    boost::geometry::strategy::transform::ublas_transformer<double, 3, 3> combined(
+        //            1.0f - 2.0f*qy*qy - 2.0f*qz*qz, 2.0f*qx*qy - 2.0f*qz*qw, 2.0f*qx*qz + 2.0f*qy*qw, 0.0f,
+        //            2.0f*qx*qy + 2.0f*qz*qw, 1.0f - 2.0f*qx*qx - 2.0f*qz*qz, 2.0f*qy*qz - 2.0f*qx*qw, 0.0f,
+        //            2.0f*qx*qz - 2.0f*qy*qw, 2.0f*qy*qz + 2.0f*qx*qw, 1.0f - 2.0f*qx*qx - 2.0f*qy*qy, 0.0f,
+        //            0.0f, 0.0f, 0.0f, 1.0f);
             
-/*
- *            cart3_point c3p, tmp;
- *            polar2_point sp2;
- *            from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> sph2cart3;
- *            from_cartesian_3_to_spherical_equatorial_2<cart3_point, polar2_point> cart3sph2;
- *
- *            auto quaternion = boost::math::spherical(1.0, 0., lat_off/180.*M_PI, lng_off/180.*M_PI);
- *            double qw = quaternion.R_component_1();
- *            double qx = quaternion.R_component_2();
- *            double qy = quaternion.R_component_3();
- *            double qz = quaternion.R_component_4();
- *            const double n = 1.0f/sqrt(qx*qx+qy*qy+qz*qz+qw*qw);
- *            qx *= n; qy *= n; qz *= n; qw *= n;
- *            ublas_transformer<double, 3, 3> combined(
- *                    1.0f - 2.0f*qy*qy - 2.0f*qz*qz, 2.0f*qx*qy - 2.0f*qz*qw, 2.0f*qx*qz + 2.0f*qy*qw, 0.0f,
- *                    2.0f*qx*qy + 2.0f*qz*qw, 1.0f - 2.0f*qx*qx - 2.0f*qz*qz, 2.0f*qy*qz - 2.0f*qx*qw, 0.0f,
- *                    2.0f*qx*qz - 2.0f*qy*qw, 2.0f*qy*qz + 2.0f*qx*qw, 1.0f - 2.0f*qx*qx - 2.0f*qy*qy, 0.0f,
- *                    0.0f, 0.0f, 0.0f, 1.0f);
- *            
- *            for(const auto& p : sp.outer()){
- *                bg::transform(p, c3p, sph2cart3);
- *                bg::transform(c3p, tmp, combined);
- *                bg::transform(tmp, sp2, cart3sph2);
- *                bg::append(res, sp2);
- *            }
- */
+        //    bg::transform(sp, c3p, sph2cart3);
+        //    bg::transform(c3p, tmp, combined);
+        //    bg::transform(tmp, sp2, cart3sph2);
+        //    return sp2;
+        //}
+        //polar2_polygon rotated(const polar2_polygon&, double , double ){
+        cart3_polygon rotated(const cart3_polygon& cp, double lat_off, double lng_off, double roll){
+            using namespace boost::geometry::strategy::transform;
+            cart3_polygon res;
+            
+            double a1 = lat_off/180.*M_PI;
+            double a2 = roll/180.*M_PI;
+            double a3 = lng_off/180.*M_PI;
+
+            double c1 = cos(a1), s1 = sin(a1);
+            double c2 = cos(a2), s2 = sin(a2);
+            double c3 = cos(a3), s3 = sin(a3);
+
+            boost::geometry::strategy::transform::ublas_transformer<double, 3, 3> combined(
+                    c2*c3,            -c2*s3,           s2,     0.,
+                    c1*s3 + c3*s1*s2, c1*c3 - s1*s2*s3, -c2*s1, 0.,
+                    s1*s3 - c1*c3*s2, c3*s1 + c1*s2*s3, c1*c2,  0.,
+                    0.,               0.,               0.,     1.
+                    );
+            
+            cart3_point tmp;
+            for(const auto& p : cp.outer()){
+                bg::transform(p, tmp, combined);
+                bg::append(res, tmp);
+            }
+            return res;
+        }
+        polar2_polygon rotated(const polar2_polygon& sp, double lat_off, double lng_off, double roll){
+            using namespace boost::geometry::strategy::transform;
+            from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> sph2cart3;
+            from_cartesian_3_to_spherical_equatorial_2<cart3_point, polar2_point> cart3sph2;
+
+            polar2_polygon res;
+            cart3_polygon c3p, tmp;
+            bg::transform(sp, c3p, sph2cart3);
+            tmp = rotated(c3p, lat_off, lng_off, roll);
+            bg::transform(tmp, res, cart3sph2);
             return res;
         }
 
@@ -284,6 +289,10 @@ namespace myriaworld
                         sep.shared_l1 = (i + 2) % 3;  // a0 and a1 are the rotation axis
                     }
                 }
+                if(n_found != 2){
+                    BOOST_LOG_TRIVIAL(error) << "n_found: " << n_found;
+                }
+                    
                 assert(n_found == 2);
                 sep.shared_h0 = a2b[sep.shared_l0];
                 sep.shared_h1 = a2b[sep.shared_l1];

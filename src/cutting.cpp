@@ -71,7 +71,7 @@ namespace myriaworld
         return q;
     }
 
-    void flatten(triangle_graph& g, double fact, double clat, double clon){
+    void flatten(triangle_graph& g, double fact, double clat, double clon, double roll){
         std::vector < boost::graph_traits<triangle_graph>::vertex_descriptor >
             p(boost::num_vertices(g));
         boost::property_map<triangle_graph, vertex_pos_t>::type pos_map 
@@ -99,11 +99,9 @@ namespace myriaworld
             std::vector<triavertex_descriptor> open_list;
 
             int start_idx = 0;
-            {
-                int s = num_vertices(g);
+            if(0){   int s = num_vertices(g);
                 double min_d = 1E9;
                 polar2_point cmp(clon,clat);
-                BOOST_LOG_TRIVIAL(warning) << "   clon " << clon << " clat " <<clat;
                 for(unsigned int i=0; i< s; i++){
                     double dist = geo::haversine_distance(centroid_map[i], cmp);
                     
@@ -120,19 +118,24 @@ namespace myriaworld
             open_list.push_back(start_idx);
 
             // first 3d point on map
-            //pos_map[start_idx].m_mappos = tria3dto2d(pos_map[start_idx].m_c3_poly);
-            {
-                boost::geometry::transform(pos_map[start_idx].m_c3_poly, pos_map[start_idx].m_s2_poly);
-                boost::geometry::transform(geo::rotated(pos_map[start_idx].m_s2_poly, 
-                            -centroid_map[start_idx].get<0>(),
-                            -centroid_map[start_idx].get<1>()), 
-                        pos_map[start_idx].m_mappos);
+            pos_map[start_idx].m_mappos = tria3dto2d(pos_map[start_idx].m_c3_poly);
+            for(auto& b : cb_map[start_idx]){
+                // transform the country-bits.
+                // (Using their s2-coordinates, c3 and mappos of the triangle)
+                bg::strategy::transform::from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> strategy;
+                boost::geometry::transform(b.m_s2_poly, b.m_c3_poly, strategy);
+                b.m_mappos = geo::tria2tria(
+                        pos_map[start_idx].m_c3_poly,
+                        pos_map[start_idx].m_mappos,
+                        b.m_c3_poly);
             }
 
+            //pos_map[start_idx].m_mappos = pos_map[start_idx].m_c3_poly;
 
             while(open_list.size() > 0){
                 // current triangle in globe coordinates
                 int cur_tria = open_list.back();
+                //BOOST_LOG_TRIVIAL(warning) << "Flattening triangle "<< cur_tria;
                 open_list.pop_back();
 
                 closed_list.push_back(cur_tria);
@@ -154,15 +157,16 @@ namespace myriaworld
 
                     // calculate angle between them on original globe
                     // put new point onto same plane as current triangle
+                    // (Using c3poly of old and new triangle, mappos of old)
                     pos_map[targetv].m_mappos 
                         = geo::flatten(pos_map[sourcev].m_c3_poly, pos_map[targetv].m_c3_poly, 
                             pos_map[sourcev].m_mappos, se_map[*eit].flipped_if_needed(sourcev, targetv), fact);
                     
                     for(auto& b : cb_map[targetv]){
+                        // transform the country-bits.
+                        // (Using their s2-coordinates, c3 and mappos of the triangle)
                         bg::strategy::transform::from_spherical_equatorial_2_to_cartesian_3<polar2_point, cart3_point> strategy;
-                        //bg::correct(b.m_s2_poly);
                         boost::geometry::transform(b.m_s2_poly, b.m_c3_poly, strategy);
-                        //bg::correct(b.m_c3_poly);
                         b.m_mappos = geo::tria2tria(
                                 pos_map[targetv].m_c3_poly,
                                 pos_map[targetv].m_mappos,
@@ -173,6 +177,20 @@ namespace myriaworld
                 }
             }
         }
+        // rotate map positions according to clat and clon
+        if(1){
+            auto vs = boost::vertices(g);
+            for(auto vit = vs.first; vit != vs.second; vit++){
+                // 1. transform c3 coordinates of the triangles
+                pos_map[*vit].m_mappos =
+                        geo::rotated(pos_map[*vit].m_mappos, clat, clon, roll);
+
+                // 2. rotate the country bits
+                for(auto& b : cb_map[*vit])
+                    b.m_mappos = geo::rotated(b.m_mappos, clat, clon, roll);
+            }
+        }
+
         if(0){
             // merging close-by points into one
             namespace bgi = boost::geometry::index;

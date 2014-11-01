@@ -53,7 +53,7 @@ void write_flattened(
         auto& tbits = bs_map[*vit];
         double color = frac_filled[*vit];
         for(const auto& bit : tbits){
-            //color = bit.m_mapcolor;
+            color = bit.m_mapcolor;
             auto& poly = bit.m_mappos;
             if(poly.outer().size() < 2)
                 continue;
@@ -193,7 +193,7 @@ int main(int argc, char** argv){
 
     namespace po = boost::program_options;
     po::options_description desc("Allowed Options");
-    double sigma, wlat, wlon, clat, clon, alpha;
+    double sigma, wlat, wlon, clat, clon, alpha, roll;
     std::string output, format, cmap;
     int depth, steps, rsteps;
     desc.add_options()
@@ -207,8 +207,9 @@ int main(int argc, char** argv){
         ("sigma", po::value<double>(&sigma)->default_value(0.7), "how much to smooth landmass")
         ("wlat", po::value<double>(&wlat)->default_value(0.1), "latitude graticular weight")
         ("wlon", po::value<double>(&wlon)->default_value(0.5), "longitude graticular weight")
-        ("clat", po::value<double>(&clat)->default_value(10), "latitude map center")
+        ("clat", po::value<double>(&clat)->default_value(53), "latitude map center")
         ("clon", po::value<double>(&clon)->default_value(10), "longitude map center")
+        ("roll", po::value<double>(&roll)->default_value(0), "roll angle (applied at end)")
         ("alpha", po::value<double>(&alpha)->default_value(1.), "flattening angle")
         ;
     po::variables_map vm;
@@ -231,6 +232,9 @@ int main(int argc, char** argv){
     auto countries = c(string("read_countries"), read_countries, string("easy2.txt"));
     g = c(string("country2tria"), side_effect_wrap, country2tria_s2, g, countries);
     g = c(string("smooth_landmass"), smooth_landmass, g, sigma);
+    g = c(string("determine_edge_weights"), determine_edge_weights, g, wlat, wlon, clat, clon);
+    g = c(string("determine_cuttings"), determine_cuttings, g);
+
     auto render = [&](int cnt){
         if(vm.count("render")){
             auto flattened_fn = boost::format("out/%s-flattened.txt") % output;
@@ -241,21 +245,33 @@ int main(int argc, char** argv){
                 throw std::runtime_error("failed to call python renderer");
         }
     };
+    auto link = [&](int src, int dst){
+        if(vm.count("render")){
+            auto src_fn = boost::format("out/%s-%04d.%s") % output % src % format;
+            auto dst_fn = boost::format("out/%s-%04d.%s") % output % dst % format;
+            int ret = system(boost::str(boost::format("ln -sf %s %s") % src_fn % dst_fn).c_str());
+            if(ret != 0)
+                throw std::runtime_error("failed to call python renderer");
+        }
+    };
 
     int cnt=0;
     for(int step = 0; step < rsteps; step++, cnt++){
-        double clon2 = clon - 180 + (step+1.0)/rsteps * 180.;
-        g = c(string("determine_edge_weights"), determine_edge_weights, g, wlat, wlon, clat, clon2);
-        g = c(string("determine_cuttings"), determine_cuttings, g);
-
-        flatten(g, 0, clat, clon2);
+        double clon2 = -0 - 180 + (step+1.0)/rsteps * 180.;
+        double clat2 = -0 -  90 + (step+1.0)/rsteps * 90;
+        flatten(g, 0, clat2, clon2, 0.);
         render(cnt);
     }
 
     for(int step = (steps==1?0:-1); step < steps; step++, cnt++){
         double a = (step+1.0)/steps * alpha;
-        flatten(g, a, clat, clon);
+        double r = (step+1.0)/steps * roll;
+        flatten(g, a, -0, -r, 0);
         render(cnt);
+    }
+
+    for(int step = 0; step < steps; step++){
+        link(cnt-1, cnt+step);
     }
 
 }

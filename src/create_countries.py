@@ -60,7 +60,7 @@ def generate_wkt(filename):
                     #print "writing %d, `%s'" % (index, feature['type'])
                     #f.write("%s;%d;%d;" % (feature['adm0_a3_l'], feature['labelrank'], feature['labelrank']))
                     print "writing `%s'" % feature['NAME_LONG']
-                    f.write("%s;%d;%d;" % (feature['NAME_LONG'], feature['MAPCOLOR7'], feature['scalerank']))
+                    f.write("%s;%d;%d;" % (feature['NAME_LONG'], feature['MAPCOLOR13'], feature['scalerank']))
                 except:
                     f.write("OCEAN;")
                 geometry = feature.GetGeometryRef()

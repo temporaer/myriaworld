@@ -44,7 +44,7 @@ class FinElem:
                 L.append(p)
         self.centroids = np.array(centroids)
         self.colors = np.array(colors)
-        print "Color Range: ", np.ptp(self.colors)
+        #print "Color Range: ", np.ptp(self.colors), np.max(self.colors), np.min(self.colors)
         self.polys = L
         self.maxx = maxx
         self.minx = minx
@@ -55,7 +55,7 @@ class FinElem:
         ax.set_ylim(self.miny, self.maxy)
 
 def plot_polys_2d(flattened_fn, output_fn, cmap):
-    fig, ax = plt.subplots(1, 1, figsize=(27*2, 27*2))
+    fig, ax = plt.subplots(1, 1, figsize=(16*3, 9*3))
 
     #lines = np.loadtxt("src/dual_graph.txt").reshape(-1, 5)
     #lines = np.loadtxt(fn).reshape(-1, 5)
@@ -72,9 +72,12 @@ def plot_polys_2d(flattened_fn, output_fn, cmap):
     verts = fe.polys
     colors = fe.colors
     #cmap = 'Paired'
+    norm = matplotlib.colors.Normalize(-1, 13)  #  mapcolor7
     def peter(c):
         if c < 0: return 0
         else:     return 0.8
+        global norm
+        norm = None
     if cmap == "binary":
         #colors = map(peter, colors)
         pass
@@ -83,7 +86,7 @@ def plot_polys_2d(flattened_fn, output_fn, cmap):
     col = matplotlib.collections.PolyCollection(verts,
         array=colors, closed=False, antialiased=2,
         edgecolor="face",
-        linewidths=1, alpha=1., cmap=cmap)
+        linewidths=1, alpha=1., cmap=cmap, norm=norm)
     #col.set_clim(0, 1)
     ax.add_collection(col)
 
@@ -92,6 +95,7 @@ def plot_polys_2d(flattened_fn, output_fn, cmap):
         ax.set_axis_bgcolor('#909090')
     else:
         ax.set_axis_bgcolor('#FFFFFF')
+    ax.set_frame_on(False)
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.set_aspect('equal')
