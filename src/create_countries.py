@@ -40,7 +40,7 @@ def generate_cpp_readable_file(filename):
                 f.write("\n")
 
 def generate_wkt(filename):
-    import ogr
+    from osgeo import ogr
     # Get the driver
     driver = ogr.GetDriverByName('ESRI Shapefile')
     # Open a shapefile

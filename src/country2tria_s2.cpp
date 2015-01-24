@@ -195,6 +195,9 @@ namespace myriaworld
             }
 
             area_map[*vit] = tria_area;
+            double frac = tria_country_area / (tria_area + 0.0000001);
+            if(frac < 0 || frac > 1.001)
+                BOOST_LOG_TRIVIAL(info) << "frac filled: " << frac;
             frac_filled[*vit] = std::max(0.0, std::min(1.0, tria_country_area / (tria_area + 0.0000001)));
 
             auto allbits_ = std::shared_ptr<S2Polygon>(

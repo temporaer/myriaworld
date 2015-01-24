@@ -380,7 +380,16 @@ namespace myriaworld
                 for(auto vit = vs.first; vit!=vs.second; vit++){
                     bool double_weight = false;
                     bool veryhigh_weight = false;
+                    bool skip = false;
                     for(auto& p_ : bits_map[*vit]){
+                        if(p_.m_name == "Indonesia"){
+                            double_weight = true;
+                            break;
+                        }
+                        if(p_.m_name == "Australia"){
+                            double_weight = true;
+                            break;
+                        }
                         if(p_.m_name == "Greenland"){
                             double_weight = true;
                             break;
@@ -403,6 +412,8 @@ namespace myriaworld
                             break;
                         }
                     }
+                    if(frac_filled[*vit] < 0.001)
+                        skip = true;
                     if(double_weight)
                         frac_filled[*vit] *= 2.;
                     if(veryhigh_weight)

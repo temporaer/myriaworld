@@ -55,7 +55,7 @@ class FinElem:
         ax.set_ylim(self.miny, self.maxy)
 
 def plot_polys_2d(flattened_fn, output_fn, cmap):
-    fig, ax = plt.subplots(1, 1, figsize=(16*3, 9*3))
+    fig, ax = plt.subplots(1, 1, figsize=(16*4, 9*4))
 
     #lines = np.loadtxt("src/dual_graph.txt").reshape(-1, 5)
     #lines = np.loadtxt(fn).reshape(-1, 5)
@@ -75,11 +75,11 @@ def plot_polys_2d(flattened_fn, output_fn, cmap):
     norm = matplotlib.colors.Normalize(-1, 13)  #  mapcolor7
     def peter(c):
         if c < 0: return 0
-        else:     return 0.8
-        global norm
+        else:     return 0.5
+    if cmap == "binary!":
+        cmap = "binary"
+        colors = map(peter, colors)
         norm = None
-    if cmap == "binary":
-        #colors = map(peter, colors)
         pass
     colors = np.array(colors)
     #colors = np.random.uniform(size=len(verts))
@@ -93,15 +93,19 @@ def plot_polys_2d(flattened_fn, output_fn, cmap):
     fe.set_limits(ax)
     if cmap == 'binary':
         ax.set_axis_bgcolor('#909090')
+        ax.patch.set_facecolor('#909090')
     else:
-        ax.set_axis_bgcolor('#FFFFFF')
+        ax.set_axis_bgcolor('#909090')
+        ax.patch.set_facecolor('#909090')
     ax.set_frame_on(False)
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
     ax.set_aspect('equal')
     plt.tight_layout()
     print "saving to", output_fn
-    plt.savefig(output_fn)
+    fig.savefig(output_fn,facecolor=fig.get_facecolor(), edgecolor='none')
+    #fig.savefig(output_fn,facecolor="#909090", edgecolor='none')
+    #fig.savefig(output_fn)
     print "showing..."
     plt.show()
 
