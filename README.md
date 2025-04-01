@@ -1,7 +1,7 @@
 # Myriaworld
 
 This is a still rugged implementation of the myriahedral projection described by Jarke J. van Wijk in his 2008 paper entitled 
-[Unfolding the Earth: Myriahedral Projections](http://www.maneyonline.com/doi/abs/10.1179/000870408X276594).
+[Unfolding the Earth: Myriahedral Projections](https://vanwijk.win.tue.nl/myriahedral/).
 
 The rough idea presented in the paper is to split up the sphere (=earth) in a
 number of very small bits.  Bits which have land mass in them should tend to
